@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '../app/AppContext'
 import { Icon } from '../components/ui/Icon'
 import { Markdown } from '../components/ui/Markdown'
@@ -138,7 +138,14 @@ export default function Coach() {
   const historyRef = useRef<EvaMessage[]>([])
   const streamingRef = useRef(false)
 
-  const suggestions = useRef(generateSuggestions(profile, baseline, lastReport)).current
+  // Mantém o contexto do aluno FRESCO: se o usuário treina e volta pra cá, a próxima
+  // mensagem à EVA (ou o "Analisar sessão") já leva os dados do treino recém-feito.
+  useEffect(() => {
+    contextRef.current = buildStudentContext(profile, baseline, lastReport)
+  }, [profile, baseline, lastReport])
+
+  // Chips dinâmicos recalculam quando o perfil/última sessão mudam (não congelam no mount).
+  const suggestions = useMemo(() => generateSuggestions(profile, baseline, lastReport), [profile, baseline, lastReport])
 
   // Auto-scroll pro fim a cada mensagem/typing (só existe depois que a conversa começa).
   useEffect(() => {
