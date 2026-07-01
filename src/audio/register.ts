@@ -37,11 +37,23 @@ interface FrameFeat {
 
 const ZERO: Record<RegisterZone, number> = { peito: 0, mix: 0, cabeça: 0, falsete: 0 }
 
+// Histerese de zona (anti-flicker perto do passaggio):
+// só troca a zona "estável" quando a candidata (argmax do score suavizado) supera
+// a estável atual por uma MARGEM clara E persiste por alguns frames. Fora disso a
+// zona fica sticky. Conservador: não regride a qualidade da estimativa, só evita
+// que a zona pisque num ponto de fronteira.
+const ZONE_SWITCH_MARGIN = 0.6 // candidata precisa liderar por +0.6 sobre a estável
+const ZONE_SWITCH_FRAMES = 3 // ...e manter essa liderança por N frames p/ trocar
+
 export class RegisterEstimator {
   private prev: { f0: number; rms: number; tilt: number } | null = null
   private lastEventT = -Infinity
   private smooth: Record<RegisterZone, number> = { ...ZERO }
   private cfg: RegisterConfig = { passaggioMidi: 64, lowMidi: 45, highMidi: 69 }
+  // estado da histerese
+  private stableZone: RegisterZone | null = null
+  private pendingZone: RegisterZone | null = null // candidata que está "empurrando"
+  private pendingCount = 0 // frames consecutivos que a candidata lidera com margem
 
   configure(cfg: Partial<RegisterConfig>) {
     this.cfg = { ...this.cfg, ...cfg }
@@ -55,11 +67,18 @@ export class RegisterEstimator {
     this.prev = null
     this.smooth = { ...ZERO }
     this.lastEventT = -Infinity
+    this.stableZone = null
+    this.pendingZone = null
+    this.pendingCount = 0
   }
 
   process(f: FrameFeat, tMs: number): RegisterState {
     if (f.f0 == null || f.f0 <= 0) {
       this.prev = null
+      // solta a histerese no silêncio: a próxima nota começa "fresca"
+      this.stableZone = null
+      this.pendingZone = null
+      this.pendingCount = 0
       return { zone: null, confidence: 0, event: null }
     }
     const f0 = f.f0
@@ -110,7 +129,38 @@ export class RegisterEstimator {
       }
     }
     const confidence = clamp01((bestV - second) / 3)
-    return { zone: best, confidence, event }
+
+    // ---- 3) Histerese booleana (anti-flicker) ----
+    // `best` é a candidata instantânea (argmax). A zona REPORTADA é a estável,
+    // que só muda quando a candidata lidera a estável por >MARGIN e mantém isso
+    // por >FRAMES. Primeira nota (stableZone null) adota a candidata na hora.
+    if (this.stableZone === null) {
+      this.stableZone = best
+      this.pendingZone = null
+      this.pendingCount = 0
+    } else if (best === this.stableZone) {
+      // candidata já é a estável → zera qualquer pressão de troca
+      this.pendingZone = null
+      this.pendingCount = 0
+    } else {
+      const margin = this.smooth[best] - this.smooth[this.stableZone]
+      if (margin > ZONE_SWITCH_MARGIN) {
+        // candidata lidera com margem clara: conta frames consecutivos
+        this.pendingCount = this.pendingZone === best ? this.pendingCount + 1 : 1
+        this.pendingZone = best
+        if (this.pendingCount >= ZONE_SWITCH_FRAMES) {
+          this.stableZone = best
+          this.pendingZone = null
+          this.pendingCount = 0
+        }
+      } else {
+        // margem insuficiente → mantém sticky, dissipa pressão
+        this.pendingZone = null
+        this.pendingCount = 0
+      }
+    }
+
+    return { zone: this.stableZone, confidence, event }
   }
 }
 

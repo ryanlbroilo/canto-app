@@ -12,6 +12,7 @@
 
 import { detectPitchMPM } from './mpm'
 import { freqToNote, NoteInfo } from './notes'
+import { PerceptionLayer } from './perception'
 import { createRingSAB } from './ringbuffer'
 import { RegisterEstimator, RegisterState } from './register'
 
@@ -31,6 +32,21 @@ export interface PitchFrame {
   neuralConf?: number
   /** Estimativa de registro + evento de quebra (backend WASM) */
   register?: RegisterState
+  // --- Camada perceptual (perception.ts): opcionais → não quebram UI existente ---
+  /** F0 suavizado perceptualmente (Hz); use para exibição estável da agulha/nota */
+  smoothedFreq?: number
+  /** Estado da nota: silent/onset/sustain/release */
+  noteState?: 'silent' | 'onset' | 'sustain' | 'release'
+  /** Trava de afinador: afinado+sustentado (celebração visual) */
+  locked?: boolean
+  /** Há quanto tempo (ms) travado */
+  lockMs?: number
+  /** Loudness perceptual suave (0..1) */
+  dynamics?: number
+  /** Estabilidade de curto prazo (0..1) — nota firme */
+  steadiness?: number
+  /** SNR contra piso de ruído adaptativo (dB) */
+  snr?: number
 }
 
 export type EngineStatus = 'idle' | 'starting' | 'running' | 'error'
@@ -61,6 +77,8 @@ export class PitchEngine {
   private silentGain: GainNode | null = null
   private latestNeural: { f0: number; conf: number; t: number } | null = null
   private register = new RegisterEstimator()
+  // Camada perceptual: suaviza F0, estado de nota, trava, dinâmica, piso de ruído.
+  private perception = new PerceptionLayer()
 
   status: EngineStatus = 'idle'
   backend: Backend | null = null
@@ -109,11 +127,17 @@ export class PitchEngine {
     }
     const voiced = f > 0 && clarity >= CLARITY_MIN && rms >= RMS_MIN
     const finalF0 = voiced ? f : null
-    const register = this.register.process({ f0: finalF0, rms, tilt, centroid, h1h2 }, performance.now())
+    const now = performance.now()
+    const register = this.register.process({ f0: finalF0, rms, tilt, centroid, h1h2 }, now)
+    // Camada perceptual: recebe o F0 já gated e devolve sinais suaves/com estado.
+    const p = this.perception.push({ f0: finalF0, clarity, rms, tMs: now })
+    // A nota EXIBIDA vem do F0 suavizado quando disponível (mais estável, sem
+    // tremor); freq segue = finalF0 cru para compatibilidade com consumidores.
+    const noteFreq = p.smoothedFreq ?? finalF0
     this.emit({
       time: this.ctx?.currentTime ?? 0,
       freq: finalF0,
-      note: voiced ? freqToNote(f) : null,
+      note: noteFreq != null ? freqToNote(noteFreq) : null,
       clarity,
       rms,
       centroid,
@@ -121,6 +145,14 @@ export class PitchEngine {
       h1h2,
       neuralConf,
       register,
+      // campos perceptuais (opcionais)
+      smoothedFreq: p.smoothedFreq ?? undefined,
+      noteState: p.noteState,
+      locked: p.locked,
+      lockMs: p.lockMs,
+      dynamics: p.dynamics,
+      steadiness: p.steadiness,
+      snr: p.snr,
     })
   }
 
@@ -128,6 +160,7 @@ export class PitchEngine {
     if (this.status === 'running' || this.status === 'starting') return
     this.setStatus('starting')
     this.lastError = null
+    this.perception.reset() // estado perceptual limpo a cada nova sessão
     try {
       this.stream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
@@ -240,6 +273,7 @@ export class PitchEngine {
     this.neuralWorker = null
     this.latestNeural = null
     this.register.reset()
+    this.perception.reset()
     try {
       this.node?.disconnect()
       this.silentGain?.disconnect()
