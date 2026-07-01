@@ -1,0 +1,375 @@
+/* ============================================================
+   Progresso — "estúdio noturno" (dark quente/dourado)
+   Estilos exclusivos da página de progresso. Só classes novas com
+   prefixo .pg- para não colidir com components/pages.css.
+   Consome gamificação + featureReports que antes eram descartados:
+   curvas por skill, tendências (vibrato/estabilidade/registro),
+   quebras de registro, conquistas e XP no tempo.
+   ============================================================ */
+
+/* ---------- Layout de seções ---------- */
+.pg-section {
+  margin-top: 22px;
+}
+.pg-section-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 30px 0 14px;
+}
+.pg-section-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: var(--gold-2);
+  background: rgba(233, 180, 76, 0.12);
+  border: 1px solid rgba(233, 180, 76, 0.22);
+  flex: none;
+}
+.pg-section-title {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.pg-section-note {
+  margin-left: auto;
+  color: var(--faint);
+  font-size: 12.5px;
+}
+
+/* grade de 2 colunas que colapsa no mobile */
+.pg-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+/* cabeçalho de gráfico dentro do card */
+.pg-chart-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.pg-chart-title {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+.pg-chart-value {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--gold-2);
+}
+.pg-canvas {
+  display: block;
+  width: 100%;
+  height: 180px;
+}
+.pg-canvas--tall {
+  height: 210px;
+}
+.pg-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 10px;
+}
+.pg-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.pg-legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  flex: none;
+}
+
+/* ---------- Painel de Skills (árvore de habilidades) ---------- */
+.pg-skills {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.pg-skill {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: var(--r-md);
+  background: linear-gradient(180deg, var(--elev), var(--panel));
+  border: 1px solid var(--hairline);
+  /* --sk é a cor da skill (injetada inline) */
+  transition:
+    border-color 160ms var(--ease),
+    transform 160ms var(--ease);
+}
+.pg-skill:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--sk) 40%, transparent);
+}
+.pg-skill-icon {
+  width: 42px;
+  height: 42px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  color: var(--sk);
+  background: color-mix(in srgb, var(--sk) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--sk) 30%, transparent);
+}
+.pg-skill-body {
+  flex: 1;
+  min-width: 0;
+}
+.pg-skill-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.pg-skill-name {
+  font-weight: 600;
+  font-size: 14.5px;
+  color: var(--text);
+}
+.pg-skill-lvl {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--sk);
+  background: color-mix(in srgb, var(--sk) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--sk) 26%, transparent);
+  border-radius: var(--r-pill);
+  padding: 2px 9px;
+  white-space: nowrap;
+}
+/* barra de XP dentro do nível */
+.pg-skill-bar {
+  height: 7px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  margin: 8px 0 7px;
+}
+.pg-skill-fill {
+  height: 100%;
+  border-radius: var(--r-pill);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--sk) 55%, transparent), var(--sk));
+  transition: width 500ms var(--ease);
+}
+.pg-skill-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.pg-skill-avg {
+  font-family: var(--font-mono);
+  color: var(--text);
+}
+.pg-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+}
+.pg-trend--up {
+  color: var(--good);
+}
+.pg-trend--down {
+  color: var(--off);
+}
+.pg-trend--flat {
+  color: var(--faint);
+}
+
+/* ---------- Grade de Conquistas ---------- */
+.pg-ach-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 12px;
+}
+.pg-ach {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  padding: 14px 15px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--hairline);
+  background: rgba(255, 255, 255, 0.02);
+  transition:
+    border-color 160ms var(--ease),
+    transform 160ms var(--ease);
+}
+.pg-ach--on {
+  border-color: rgba(233, 180, 76, 0.28);
+  background: linear-gradient(180deg, rgba(233, 180, 76, 0.09), rgba(233, 180, 76, 0.03));
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25);
+}
+.pg-ach--on:hover {
+  transform: translateY(-2px);
+  border-color: rgba(233, 180, 76, 0.45);
+}
+.pg-ach--off {
+  opacity: 0.5;
+  filter: grayscale(0.5);
+}
+.pg-ach-icon {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  color: var(--gold-2);
+  background: rgba(233, 180, 76, 0.12);
+  border: 1px solid rgba(233, 180, 76, 0.25);
+}
+.pg-ach--off .pg-ach-icon {
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--hairline);
+}
+.pg-ach-body {
+  min-width: 0;
+}
+.pg-ach-label {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.pg-ach--off .pg-ach-label {
+  color: var(--muted);
+}
+.pg-ach-lock {
+  color: var(--faint);
+  display: inline-flex;
+}
+.pg-ach-desc {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.pg-ach-count {
+  font-family: var(--font-mono);
+  color: var(--gold-2);
+}
+
+/* ---------- Nível global / XP hero ---------- */
+.pg-level {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.pg-level-ring {
+  flex: none;
+}
+.pg-level-body {
+  flex: 1;
+  min-width: 0;
+}
+.pg-level-xp {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.pg-level-xp b {
+  color: var(--gold-2);
+  font-size: 15px;
+}
+
+/* ---------- Sparkline de quebras de registro ---------- */
+.pg-breaks {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.pg-breaks-num {
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--gold-2);
+}
+.pg-breaks-num.is-zero {
+  color: var(--good);
+}
+.pg-breaks-label {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.pg-spark {
+  flex: 1;
+  min-width: 0;
+  display: block;
+  width: 100%;
+  height: 56px;
+}
+
+/* placeholder elegante de estado vazio local a um gráfico */
+.pg-empty {
+  display: grid;
+  place-items: center;
+  min-height: 150px;
+  padding: 18px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+  border: 1px dashed var(--hairline);
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.015);
+}
+
+/* ---------- Heatmap enriquecido (intensidade por duração) ---------- */
+/* usamos a mesma grade .heat/.heat-cell de pages.css; só a intensidade
+   é aplicada inline via background. Aqui damos um contorno mais quente. */
+.pg-heat-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: 12px;
+}
+.pg-heat-scale {
+  display: flex;
+  gap: 3px;
+}
+.pg-heat-swatch {
+  width: 13px;
+  height: 13px;
+  border-radius: 3px;
+}
+
+@media (max-width: 720px) {
+  .pg-grid-2,
+  .pg-skills {
+    grid-template-columns: 1fr;
+  }
+}
