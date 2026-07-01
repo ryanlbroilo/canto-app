@@ -534,7 +534,7 @@ function XpChart({ sessions }: { sessions: SessionRecord[] }) {
       line(ctx, pts, COLORS.gold)
       dots(ctx, pts, COLORS.gold)
     },
-    [cum.length, cum[cum.length - 1] ?? 0],
+    [cum.length, cum.join(',')],
   )
   return <canvas ref={ref} className="pg-canvas" />
 }

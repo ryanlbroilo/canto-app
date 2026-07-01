@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import '../styles/exercises.css'
 import { getExercise } from '../data/exercises'
@@ -52,6 +52,9 @@ export default function Exercises() {
   }, [done])
 
   const [level, setLevel] = useState<TrackLevel>(currentLevel)
+  // Acompanha o nível computado quando ele MUDA (ex.: dominou a trilha e subiu).
+  // A seleção manual de aba persiste enquanto currentLevel não muda.
+  useEffect(() => setLevel(currentLevel), [currentLevel])
   const track = trackForLevel(level)
 
   // Exercícios da trilha ativa, na ORDEM do currículo (é o caminho).
