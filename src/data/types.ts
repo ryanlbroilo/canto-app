@@ -6,6 +6,17 @@ export interface VocalBaseline {
   voiceType: string
   includesFalsetto: boolean
   measuredAt: string
+  // ---- Campos ADITIVOS/OPCIONAIS (onda "Meu range") ----
+  // Backward-compatible: baselines antigos não têm estes campos; toda a UI trata
+  // ausência com elegância. NÃO reordenar nem tornar obrigatórios.
+  /** Limite grave da tessitura confortável (MIDI) — faixa que se sustenta sem esforço */
+  tessituraLowMidi?: number
+  /** Limite agudo da tessitura confortável (MIDI) */
+  tessituraHighMidi?: number
+  /** Passaggio medido via glissando/sirene (MIDI aproximado) — onde a voz "quebra" */
+  passaggioMidi?: number
+  /** Firmeza da captura de extremos (0..100) — derivado do desvio-padrão das amostras */
+  stabilityScore?: number
 }
 
 export interface Profile {
