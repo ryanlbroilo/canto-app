@@ -1,0 +1,17 @@
+{
+  "name": "canto-dsp",
+  "type": "module",
+  "description": "Núcleo de DSP vocal (F0 + features) para o Canto — compila para WebAssembly",
+  "version": "0.1.0",
+  "license": "MIT",
+  "files": [
+    "canto_dsp_bg.wasm",
+    "canto_dsp.js",
+    "canto_dsp.d.ts"
+  ],
+  "main": "canto_dsp.js",
+  "types": "canto_dsp.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
