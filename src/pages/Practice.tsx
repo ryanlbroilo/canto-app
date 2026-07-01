@@ -6,10 +6,14 @@ import { TargetPicker } from '../components/TargetPicker'
 import { LevelMeter } from '../components/LevelMeter'
 import { VoiceInsights } from '../components/audio/VoiceInsights'
 import { SessionSummary } from '../components/audio/SessionSummary'
+import { AudioBlob } from '../components/audio/AudioBlob'
 import { Icon } from '../components/ui/Icon'
 import { addSession, newId } from '../data/store'
 import { SessionAggregator } from '../audio/session'
 import { FeatureReport } from '../data/types'
+import { PitchEngine, PitchFrame } from '../audio/PitchEngine'
+import { freqToMidiFloat } from '../audio/notes'
+import { centsZone } from '../theme'
 
 export default function Practice() {
   const { engine, micStatus, reload } = useApp()
@@ -78,8 +82,15 @@ export default function Practice() {
       </div>
 
       <div className="card card--glow stack gap-3 reveal r0">
-        <PitchDisplay engine={engine} target={target} />
+        {/* Orbe de marca: respira com o áudio (dynamics/rms) e a firmeza (steadiness). */}
+        <div className="practice-hero">
+          <AudioBlob engine={engine} size={168} />
+          <div className="practice-hero-display">
+            <PitchDisplay engine={engine} target={target} />
+          </div>
+        </div>
         <PitchGraph engine={engine} target={target} />
+        <NoteHistory engine={engine} target={target} />
         <VoiceInsights engine={engine} />
         <div className="controls">
           {!running ? (
@@ -121,6 +132,88 @@ export default function Practice() {
           <SessionSummary report={lastReport} />
         </div>
       )}
+    </div>
+  )
+}
+
+/* ---------------- Histórico de notas ---------------- */
+// Fileira das últimas ~10 notas que ASSENTARAM. Uma "tentativa" é marcada quando
+// uma nota se sustenta de forma estável (noteState='sustain' quando disponível;
+// senão, uma sequência de frames voiced no mesmo semitom serve de fallback pro
+// backend analyser). Cada pílula é colorida pela zona de cents no momento em que
+// assentou (verde/âmbar/coral).
+interface Attempt {
+  id: number
+  label: string
+  zone: 'good' | 'close' | 'off'
+}
+
+function NoteHistory({ engine, target }: { engine: PitchEngine; target: number | null }) {
+  const [attempts, setAttempts] = useState<Attempt[]>([])
+  const targetRef = useRef(target)
+  targetRef.current = target
+
+  // Estado da máquina de "assentamento" (fora do React para não re-render a 60fps).
+  const stRef = useRef({
+    midi: null as number | null, // semitom atual da nota firme
+    streak: 0, // frames consecutivos no mesmo semitom (fallback analyser)
+    settled: false, // já registramos essa nota?
+    seq: 0, // id incremental das pílulas
+  })
+
+  useEffect(() => {
+    const unsub = engine.subscribe((f: PitchFrame) => {
+      const st = stRef.current
+      const freq = f.smoothedFreq ?? f.freq ?? null
+
+      if (freq == null || f.freq == null || f.note == null) {
+        // silêncio → reseta a máquina; a próxima nota é uma nova tentativa.
+        st.midi = null
+        st.streak = 0
+        st.settled = false
+        return
+      }
+
+      const midi = Math.round(freqToMidiFloat(freq))
+      if (midi !== st.midi) {
+        // mudou de nota → recomeça a contagem de firmeza.
+        st.midi = midi
+        st.streak = 1
+        st.settled = false
+        return
+      }
+      st.streak++
+
+      // Critério de "assentou": preferimos o noteState perceptual (sustain).
+      // Sem ele (analyser), exigimos uma sequência mínima de frames estáveis.
+      const settledNow = f.noteState != null ? f.noteState === 'sustain' : st.streak >= 12
+
+      if (settledNow && !st.settled) {
+        st.settled = true
+        // cents no momento do assentamento (relativo ao alvo, se houver).
+        const tgt = targetRef.current
+        const centsValue = tgt != null ? Math.round((freqToMidiFloat(freq) - tgt) * 100) : (f.smoothedFreq != null ? f.note.cents : f.note.cents)
+        const zone = centsZone(centsValue)
+        const label = `${f.note.name}${f.note.octave}`
+        const id = st.seq++
+        setAttempts((prev) => [...prev.slice(-9), { id, label, zone }])
+      }
+    })
+    return unsub
+  }, [engine])
+
+  if (attempts.length === 0) return null
+
+  return (
+    <div className="note-history" aria-label="Histórico de notas">
+      <span className="note-history-label">últimas notas</span>
+      <div className="note-history-row">
+        {attempts.map((a) => (
+          <span key={a.id} className="note-pill" data-zone={a.zone}>
+            {a.label}
+          </span>
+        ))}
+      </div>
     </div>
   )
 }

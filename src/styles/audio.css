@@ -350,3 +350,277 @@
   accent-color: var(--gold);
   cursor: pointer;
 }
+
+/* ============================================================
+   Captação VIVA — herói (blob + display), trava de afinador,
+   firmeza, histórico de notas, onda de vibrato, próximo passo.
+   Todos os sinais perceptuais têm fallback: sem eles, as variáveis
+   ficam em 0 e a UI degrada pro comportamento anterior.
+   ============================================================ */
+
+/* ---------- Herói da prática: orbe + leitura lado a lado ---------- */
+.practice-hero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(12px, 4vw, 40px);
+  flex-wrap: wrap;
+}
+.practice-hero .blob {
+  flex: 0 0 auto;
+}
+.practice-hero-display {
+  flex: 1 1 320px;
+  min-width: 280px;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---------- Display VIVO: energia (dynamics) na nota ---------- */
+.display--live {
+  position: relative;
+}
+/* A escala/brilho da nota crescem sutilmente com a dinâmica da agulha (--dyn
+   é propagado pelo needle; aqui usamos o próprio estado para o glow). */
+.display--live .display-note {
+  transition: color 90ms linear, transform 120ms var(--ease), text-shadow 140ms var(--ease);
+}
+/* ataque: leve "pop" no onset; sustentação: assenta. */
+.display--live[data-note='onset'] .display-note {
+  transform: scale(1.035);
+}
+.display--live[data-note='release'] .display-note {
+  opacity: 0.8;
+}
+.display--live[data-note='silent'] .display-note {
+  opacity: 0.55;
+}
+
+/* Arco de firmeza (steadiness): anel que fecha conforme a nota fica firme. */
+.steady-ring {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  pointer-events: none;
+  /* o conic-gradient "preenche" o anel na proporção da firmeza (--steady 0..1) */
+  background: conic-gradient(
+    color-mix(in srgb, var(--zone) 70%, transparent) calc(var(--steady, 0) * 360deg),
+    transparent 0
+  );
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+  opacity: calc(0.25 + var(--steady, 0) * 0.6);
+  transition: opacity 160ms var(--ease);
+}
+
+/* Agulha: o brilho e a espessura respiram com a dinâmica (--dyn 0..1). */
+.cents-needle {
+  box-shadow: 0 0 calc(10px + var(--dyn, 0) * 16px)
+    color-mix(in srgb, var(--zone) calc(45% + var(--dyn, 0) * 40%), transparent);
+}
+
+/* Trava de afinador ("na mira"): anel pulsante + micro-rótulo. Intensidade
+   cresce com --grip (derivado de lockMs). */
+.lock-badge {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 200ms var(--ease);
+}
+.lock-badge[data-on='1'] {
+  opacity: 1;
+}
+.lock-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: calc(150px + var(--grip, 0) * 26px);
+  height: calc(150px + var(--grip, 0) * 26px);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 2px solid var(--good);
+  box-shadow: 0 0 calc(14px + var(--grip, 0) * 28px) rgba(87, 214, 166, calc(0.3 + var(--grip, 0) * 0.5)),
+    inset 0 0 18px rgba(87, 214, 166, calc(0.12 + var(--grip, 0) * 0.28));
+  opacity: calc(0.5 + var(--grip, 0) * 0.5);
+}
+.lock-badge[data-on='1'] .lock-ring {
+  animation: lockpulse 1.1s var(--ease) infinite;
+}
+@keyframes lockpulse {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.045);
+  }
+}
+.lock-label {
+  position: absolute;
+  top: calc(50% + 78px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--good);
+  text-shadow: 0 0 12px rgba(87, 214, 166, 0.5);
+}
+@media (prefers-reduced-motion: reduce) {
+  .lock-badge[data-on='1'] .lock-ring {
+    animation: none;
+  }
+}
+
+/* ---------- Histórico de notas ---------- */
+.note-history {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.note-history-label {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--faint);
+  font-weight: 700;
+  flex: 0 0 auto;
+}
+.note-history-row {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.note-pill {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--hairline);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--muted);
+  animation: pill-in 260ms var(--ease);
+}
+.note-pill[data-zone='good'] {
+  color: var(--good);
+  border-color: rgba(87, 214, 166, 0.35);
+  background: rgba(87, 214, 166, 0.1);
+}
+.note-pill[data-zone='close'] {
+  color: var(--close);
+  border-color: rgba(240, 185, 74, 0.35);
+  background: rgba(240, 185, 74, 0.1);
+}
+.note-pill[data-zone='off'] {
+  color: var(--off);
+  border-color: rgba(242, 109, 91, 0.35);
+  background: rgba(242, 109, 91, 0.1);
+}
+@keyframes pill-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ---------- Mini-onda de vibrato (VoiceInsights) ---------- */
+.vib-wave {
+  width: 46px;
+  height: 16px;
+  overflow: visible;
+  opacity: 0;
+  transition: opacity 200ms var(--ease);
+}
+.vib[data-on='1'] .vib-wave {
+  opacity: 1;
+}
+.vib-wave-path {
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+/* Anima a onda deslizando um ciclo pela duração real do período (--vib-dur). */
+.vib[data-on='1'] .vib-wave-path {
+  animation: vibslide var(--vib-dur, 0.18s) linear infinite;
+}
+@keyframes vibslide {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-12px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vib[data-on='1'] .vib-wave-path {
+    animation: none;
+  }
+}
+
+/* ---------- Próximo exercício adaptativo (Result do player) ---------- */
+.next-ex {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-md);
+  background: rgba(233, 180, 76, 0.045);
+  animation: reveal-up 320ms var(--ease);
+}
+.next-ex-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  color: var(--muted);
+}
+.next-ex-head svg {
+  color: var(--gold-2);
+}
+.next-ex-tag {
+  margin-left: auto;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.next-ex-card {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+.next-ex-reason {
+  margin: 3px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

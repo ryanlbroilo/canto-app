@@ -2,11 +2,14 @@ import { useEffect, useRef } from 'react'
 import { PitchEngine, PitchFrame } from '../../audio/PitchEngine'
 import { RegisterZone } from '../../audio/register'
 import { analyzeVibratoFromF0 } from '../../audio/vibrato'
-import { Icon } from '../ui/Icon'
 
 // Painel de diagnóstico ao vivo: zona de registro estimada (peito/mix/cabeça/
 // falsete), alerta de quebra, e vibrato em tempo real (janela rolante). É o
 // "moat" ficando visível. Rótulo "estimado" — honestidade: registro é inferência.
+//
+// O vibrato agora ganha uma MINI-ONDA SVG que oscila na taxa detectada, além do
+// "5.2 Hz" textual: a onda anima seu ciclo pela duração real do período (1/rateHz),
+// então você VÊ a velocidade do vibrato, não só lê.
 const ZONES: { key: RegisterZone; label: string; color: string }[] = [
   { key: 'peito', label: 'Peito', color: '#e9b44c' },
   { key: 'mix', label: 'Mix', color: '#57d6a6' },
@@ -20,6 +23,7 @@ export function VoiceInsights({ engine }: { engine: PitchEngine }) {
   const flashRef = useRef<HTMLDivElement>(null)
   const vibRef = useRef<HTMLDivElement>(null)
   const vibValRef = useRef<HTMLSpanElement>(null)
+  const waveRef = useRef<SVGElement>(null) // <svg> da mini-onda de vibrato
   const buf = useRef<{ t: number; f0: number }[]>([])
   const nFrames = useRef(0)
 
@@ -52,6 +56,7 @@ export function VoiceInsights({ engine }: { engine: PitchEngine }) {
       nFrames.current++
       if (nFrames.current % 6 === 0 && vibRef.current && vibValRef.current) {
         let txt = ''
+        let rate = 0
         const b = buf.current
         if (b.length > 24) {
           const fps = (b.length - 1) / ((b[b.length - 1].t - b[0].t) / 1000)
@@ -59,10 +64,19 @@ export function VoiceInsights({ engine }: { engine: PitchEngine }) {
             b.map((x) => x.f0),
             fps,
           )
-          if (v.present) txt = `${v.rateHz} Hz`
+          if (v.present) {
+            txt = `${v.rateHz} Hz`
+            rate = v.rateHz
+          }
         }
         vibRef.current.dataset.on = txt ? '1' : '0'
         vibValRef.current.textContent = txt || '—'
+        // Casa a animação da onda com a taxa detectada: um ciclo = 1/rateHz.
+        if (waveRef.current) {
+          if (rate > 0) {
+            waveRef.current.style.setProperty('--vib-dur', `${(1 / rate).toFixed(3)}s`)
+          }
+        }
       }
     })
   }, [engine])
@@ -74,7 +88,17 @@ export function VoiceInsights({ engine }: { engine: PitchEngine }) {
           Registro <em>estimado</em>
         </span>
         <div className="vib" ref={vibRef} data-on="0">
-          <Icon name="wave" size={15} />
+          {/* mini-onda: oscila na taxa do vibrato (var --vib-dur) */}
+          <svg
+            className="vib-wave"
+            ref={waveRef as React.RefObject<SVGSVGElement>}
+            viewBox="0 0 48 20"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+            style={{ ['--vib-dur' as string]: '0.18s' }}
+          >
+            <path className="vib-wave-path" d="M0 10 Q 6 2 12 10 T 24 10 T 36 10 T 48 10" fill="none" />
+          </svg>
           <span className="vib-val mono" ref={vibValRef}>
             —
           </span>
