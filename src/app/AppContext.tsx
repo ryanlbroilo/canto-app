@@ -1,8 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useState, ReactNode } from 'react'
 import { usePitchEngine } from '../hooks/usePitchEngine'
 import { PitchEngine, EngineStatus } from '../audio/PitchEngine'
-import { Profile, Settings, SessionRecord, Streak, VocalBaseline } from '../data/types'
-import { getBaseline, getProfile, getSettings, getSessions, getStreak } from '../data/store'
+import { GamificationState, Profile, Settings, SessionRecord, Streak, VocalBaseline } from '../data/types'
+import { getBaseline, getProfile, getSettings, getSessions, getStreak, getGamification } from '../data/store'
 
 interface AppCtx {
   engine: PitchEngine
@@ -12,6 +12,8 @@ interface AppCtx {
   settings: Settings
   streak: Streak
   sessions: SessionRecord[]
+  /** Estado agregado de gamificação (XP, nível, skills, conquistas, recomendação) */
+  gamification: GamificationState
   /** Re-lê tudo do store (chamar após salvar) */
   reload: () => void
 }
@@ -25,6 +27,7 @@ function loadAll() {
     settings: getSettings(),
     streak: getStreak(),
     sessions: getSessions(),
+    gamification: getGamification(),
   }
 }
 

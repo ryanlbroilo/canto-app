@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { Icon, IconName } from '../components/ui/Icon'
+import { EXERCISES } from '../data/exercises'
 import { useApp } from './AppContext'
 
 interface NavItem {
@@ -20,7 +21,7 @@ const ACOMP: NavItem[] = [
 ]
 
 export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () => void }) {
-  const { streak } = useApp()
+  const { streak, gamification } = useApp()
 
   const link = (item: NavItem) => (
     <NavLink
@@ -32,7 +33,7 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
     >
       <Icon name={item.icon} />
       <span>{item.label}</span>
-      {item.to === '/exercicios' && <span className="nav-badge">8</span>}
+      {item.to === '/exercicios' && <span className="nav-badge">{EXERCISES.length}</span>}
     </NavLink>
   )
 
@@ -65,6 +66,13 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
           <Icon name="settings" />
           <span>Configurações</span>
         </NavLink>
+        <div className="nav-link" style={{ cursor: 'default' }}>
+          <Icon name="bolt" />
+          <span>Nível {gamification.level}</span>
+          <span className="nav-badge" style={{ color: '#e9b44c' }}>
+            {gamification.xpIntoLevel}/{gamification.xpForNext} XP
+          </span>
+        </div>
         <div className="nav-link" style={{ cursor: 'default' }}>
           <Icon name="flame" />
           <span>Ofensiva</span>
