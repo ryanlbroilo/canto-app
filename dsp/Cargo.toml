@@ -1,0 +1,17 @@
+[package]
+name = "canto-dsp"
+version = "0.1.0"
+edition = "2021"
+description = "Núcleo de DSP vocal (F0 + features) para o Canto — compila para WebAssembly"
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+wasm-bindgen = "0.2"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1

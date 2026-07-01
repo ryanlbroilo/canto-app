@@ -1,0 +1,529 @@
+/* ============================================================
+   Estilos específicos de páginas — dashboard, exercícios,
+   progresso, coach (EVA), configurações, onboarding.
+   ============================================================ */
+
+/* ---------- Dashboard ---------- */
+.hero-card {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 20px;
+}
+.hero-greet {
+  font-family: var(--font-display);
+  font-size: 27px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.hero-sub {
+  color: var(--muted);
+  margin: 6px 0 18px;
+  max-width: 42ch;
+}
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.mini-cal {
+  display: flex;
+  gap: 6px;
+}
+.mini-cal-day {
+  flex: 1;
+  aspect-ratio: 1;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.05);
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  color: var(--faint);
+  border: 1px solid transparent;
+}
+.mini-cal-day[data-done='true'] {
+  background: rgba(233, 180, 76, 0.16);
+  border-color: rgba(233, 180, 76, 0.3);
+  color: var(--gold-2);
+}
+.mini-cal-day[data-today='true'] {
+  border-color: var(--gold);
+}
+.eva-tip {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.eva-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--good), #2b8f6c);
+  box-shadow: 0 8px 22px rgba(87, 214, 166, 0.22);
+}
+
+/* ---------- Exercícios ---------- */
+.phase-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 26px 0 14px;
+}
+.phase-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gold-2);
+  background: rgba(233, 180, 76, 0.12);
+  border: 1px solid rgba(233, 180, 76, 0.22);
+}
+.phase-title {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 600;
+}
+.ex-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px;
+  cursor: pointer;
+  transition: all 140ms var(--ease);
+}
+.ex-card:hover {
+  border-color: var(--hairline-strong);
+  transform: translateY(-1px);
+}
+.ex-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  color: var(--gold-2);
+  background: rgba(233, 180, 76, 0.1);
+  border: 1px solid var(--hairline);
+}
+.ex-name {
+  font-weight: 600;
+  font-size: 15.5px;
+}
+.ex-meta {
+  color: var(--muted);
+  font-size: 13px;
+}
+.ex-go {
+  margin-left: auto;
+  color: var(--faint);
+}
+
+/* ---------- Exercise player ---------- */
+.player {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+.player-step {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+.player-target {
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: var(--muted);
+}
+.player-target b {
+  color: var(--gold-2);
+}
+.breath-orb {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 40% 35%, rgba(87, 214, 166, 0.5), rgba(43, 143, 108, 0.15) 70%);
+  border: 1px solid rgba(87, 214, 166, 0.3);
+  transition: transform 400ms var(--ease);
+  font-weight: 600;
+}
+.score-big {
+  font-family: var(--font-display);
+  font-size: 64px;
+  font-weight: 600;
+  color: var(--gold-2);
+  line-height: 1;
+}
+
+/* ---------- Progresso ---------- */
+.chart-wrap {
+  position: relative;
+}
+.chart-canvas {
+  display: block;
+  width: 100%;
+  height: 220px;
+}
+.heat {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15px, 1fr));
+  gap: 5px;
+}
+.heat-cell {
+  aspect-ratio: 1;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* ---------- Coach (EVA) ---------- */
+.chat {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 62vh;
+  padding: 20px;
+}
+.chat-scroll {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  padding-right: 8px;
+  max-height: 58vh;
+}
+.msg {
+  display: flex;
+  gap: 11px;
+  max-width: 86%;
+}
+.msg-av {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  flex: none;
+  align-self: flex-start;
+  margin-top: 2px;
+}
+.msg-bubble {
+  padding: 12px 16px;
+  border-radius: 16px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+.msg--eva {
+  align-self: flex-start;
+}
+.msg--eva .msg-bubble {
+  background: linear-gradient(180deg, var(--elev), var(--panel));
+  border: 1px solid var(--hairline);
+  border-top-left-radius: 6px;
+}
+.msg--me {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+.msg--me .msg-bubble {
+  background: linear-gradient(135deg, rgba(233, 180, 76, 0.24), rgba(233, 180, 76, 0.12));
+  border: 1px solid rgba(233, 180, 76, 0.26);
+  border-top-right-radius: 6px;
+  color: #fbeccb;
+}
+
+/* markdown dentro das bolhas da EVA */
+.md > :first-child {
+  margin-top: 0;
+}
+.md > :last-child {
+  margin-bottom: 0;
+}
+.md-p {
+  margin: 0 0 9px;
+}
+.md-strong {
+  font-weight: 700;
+  color: #fff;
+}
+.md-em {
+  font-style: italic;
+  color: var(--text);
+}
+.md-ul,
+.md-ol {
+  margin: 4px 0 10px;
+  padding-left: 20px;
+}
+.md-li {
+  margin: 3px 0;
+}
+.md-li::marker {
+  color: var(--gold);
+}
+.md-h {
+  font-family: var(--font-display);
+  font-size: 15.5px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 12px 0 6px;
+}
+.md-a {
+  color: var(--gold-2);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.md-code {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  padding: 1px 6px;
+}
+.md-quote {
+  border-left: 3px solid rgba(233, 180, 76, 0.5);
+  margin: 8px 0;
+  padding: 2px 0 2px 12px;
+  color: var(--muted);
+}
+.md-hr {
+  border: none;
+  border-top: 1px solid var(--hairline);
+  margin: 12px 0;
+}
+
+/* indicador de "digitando" */
+.typing {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  padding: 15px 18px;
+}
+.typing span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--muted);
+  animation: typingdot 1.2s infinite ease-in-out;
+}
+.typing span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.typing span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+@keyframes typingdot {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+/* chips de sugestão */
+.chip-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 2px;
+}
+
+/* input */
+.chat-input {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  border-top: 1px solid var(--hairline);
+  padding-top: 14px;
+}
+.chat-textarea {
+  flex: 1;
+  resize: none;
+  font-family: var(--font-ui);
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--panel-2);
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+  padding: 12px 15px;
+  max-height: 132px;
+  overflow-y: auto;
+  transition: border-color 140ms var(--ease);
+}
+.chat-textarea:focus {
+  outline: none;
+  border-color: rgba(233, 180, 76, 0.45);
+}
+.chat-textarea::placeholder {
+  color: var(--faint);
+}
+.chat-send {
+  align-self: flex-end;
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+}
+
+/* ---------- Configurações ---------- */
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 15px 0;
+}
+.setting-row + .setting-row {
+  border-top: 1px solid var(--hairline);
+}
+.setting-label {
+  font-weight: 600;
+  font-size: 14.5px;
+}
+.setting-desc {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 2px;
+  max-width: 46ch;
+}
+
+/* ---------- Onboarding ---------- */
+.onb {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.onb-card {
+  width: 100%;
+  max-width: 520px;
+}
+.onb-dots {
+  display: flex;
+  gap: 7px;
+  justify-content: center;
+  margin-top: 22px;
+}
+.onb-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+}
+.onb-dot[data-on='true'] {
+  background: var(--gold);
+  width: 22px;
+  border-radius: 4px;
+}
+
+/* ---------- Resumo de sessão (SessionSummary) ---------- */
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+.summary-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.sum-stat {
+  text-align: center;
+  padding: 12px 6px;
+  border-radius: 12px;
+  border: 1px solid var(--hairline);
+  background: rgba(255, 255, 255, 0.03);
+}
+.sum-stat-value {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--gold-2);
+}
+.sum-stat-label {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.summary-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.summary-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  font-weight: 700;
+}
+.reg-bar {
+  display: flex;
+  height: 14px;
+  border-radius: var(--r-pill);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+  gap: 2px;
+}
+.reg-seg {
+  height: 100%;
+  transition: width 400ms var(--ease);
+}
+.reg-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.reg-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.reg-legend-item .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+.summary-events {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* utilidade de reveal escalonado */
+.r0 {
+  animation-delay: 0ms;
+}
+.r1 {
+  animation-delay: 70ms;
+}
+.r2 {
+  animation-delay: 140ms;
+}
+.r3 {
+  animation-delay: 210ms;
+}
+.r4 {
+  animation-delay: 280ms;
+}

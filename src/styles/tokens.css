@@ -1,0 +1,61 @@
+/* ============================================================
+   Design tokens — "Estúdio noturno / voz viva"
+   Dark quente (espresso), marca âmbar/mel, semântica de afinação
+   separada (menta / âmbar / coral). Tipografia: Fraunces + Bricolage
+   Grotesque + JetBrains Mono.
+   ============================================================ */
+:root {
+  /* — canvas (near-black quente) — */
+  --bg-0: #0d0c0a;
+  --bg-1: #131009;
+  --panel: #1b1710;
+  --panel-2: #171309;
+  --elev: #241d13;
+  --hairline: rgba(233, 180, 76, 0.1);
+  --hairline-strong: rgba(233, 180, 76, 0.2);
+  --overlay: rgba(9, 8, 6, 0.72);
+
+  /* — tinta — */
+  --text: #f5eddd;
+  --muted: #ab9d86;
+  --faint: #726750;
+
+  /* — marca (mel/âmbar + terracota) — */
+  --gold: #e9b44c;
+  --gold-2: #f3cd73;
+  --gold-deep: #b9832c;
+  --ember: #c65d3b;
+
+  /* — semântica de afinação — */
+  --good: #57d6a6; /* no tom */
+  --close: #f0b94a; /* perto */
+  --off: #f26d5b; /* fora */
+  --info: #7fb2ff;
+
+  /* — tipografia — */
+  --font-display: 'Fraunces', 'Iowan Old Style', Georgia, serif;
+  --font-ui: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  /* — raios — */
+  --r-xs: 8px;
+  --r-sm: 11px;
+  --r-md: 15px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+  --r-pill: 999px;
+
+  /* — sombras — */
+  --shadow-1: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 12px 34px rgba(0, 0, 0, 0.42);
+  --shadow-2: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 24px 60px rgba(0, 0, 0, 0.5);
+  --shadow-gold: 0 10px 34px rgba(233, 180, 76, 0.28);
+
+  /* — espaço — */
+  --sidebar-w: 246px;
+  --topbar-h: 66px;
+  --page-max: 1160px;
+
+  /* — motion — */
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+}

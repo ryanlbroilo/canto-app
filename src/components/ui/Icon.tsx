@@ -1,0 +1,92 @@
+// Conjunto de ícones (SVG inline, stroke). Sem dependências.
+// Uso: <Icon name="mic" />
+
+type IconName =
+  | 'home'
+  | 'mic'
+  | 'gauge'
+  | 'dumbbell'
+  | 'chart'
+  | 'spark'
+  | 'settings'
+  | 'chevron'
+  | 'menu'
+  | 'play'
+  | 'flame'
+  | 'wave'
+  | 'target'
+  | 'check'
+  | 'lungs'
+  | 'send'
+  | 'lock'
+
+const PATHS: Record<IconName, JSX.Element> = {
+  home: <path d="M3 10.5 12 3l9 7.5M5 9v11h5v-6h4v6h5V9" />,
+  mic: (
+    <>
+      <rect x="9" y="2" width="6" height="12" rx="3" />
+      <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
+    </>
+  ),
+  gauge: (
+    <>
+      <path d="M12 13a1 1 0 0 0 1-1l3-5" />
+      <path d="M4.5 18a9 9 0 1 1 15 0" />
+    </>
+  ),
+  dumbbell: (
+    <>
+      <path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11" />
+    </>
+  ),
+  chart: <path d="M4 20V4M4 20h16M8 16l3-4 3 2 4-6" />,
+  spark: (
+    <path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18" />
+  ),
+  settings: (
+    <>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" />
+    </>
+  ),
+  chevron: <path d="M9 6l6 6-6 6" />,
+  menu: <path d="M4 7h16M4 12h16M4 17h16" />,
+  play: <path d="M7 4.5 19 12 7 19.5z" />,
+  flame: <path d="M12 3c1 4 5 5 5 9a5 5 0 0 1-10 0c0-2 1-3 2-4 .5 2 2 2 3 1-.5-2-1-4 0-6z" />,
+  wave: <path d="M2 12h2l2-6 3 14 3-18 3 12 2-4h2" />,
+  target: (
+    <>
+      <circle cx="12" cy="12" r="8" />
+      <circle cx="12" cy="12" r="3.5" />
+    </>
+  ),
+  check: <path d="M4 12.5 9 17.5 20 6.5" />,
+  lungs: <path d="M12 3v9M8 8c-3 1-4 4-4 8 0 2 3 2 4 0 1-2 1-5 0-8zM16 8c3 1 4 4 4 8 0 2-3 2-4 0-1-2-1-5 0-8z" />,
+  send: <path d="M4 12 20 4l-6 16-3-7-7-1z" />,
+  lock: (
+    <>
+      <rect x="5" y="11" width="14" height="9" rx="2" />
+      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+    </>
+  ),
+}
+
+export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.7}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {PATHS[name]}
+    </svg>
+  )
+}
+
+export type { IconName }

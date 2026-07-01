@@ -1,0 +1,20 @@
+node_modules
+dist
+dist-ssr
+*.local
+.DS_Store
+.vite
+
+# Rust / WASM build (intermediários — o artefato final vai em src/wasm/)
+dsp/target
+dsp/pkg-node
+dsp/Cargo.lock
+
+# binários do ORT (regeneráveis: npm run sync:ort)
+public/ort/
+
+# segredos locais (EVA Hub) — NUNCA commitar chaves vivas
+.env
+.env.local
+.env.*.local
+!.env.example
