@@ -2,6 +2,7 @@
 // Migra para a API do EVA Hub depois, mantendo a mesma forma.
 import { GamificationState, Profile, Settings, SessionRecord, Streak, VocalBaseline } from './types'
 import { computeGamification } from './gamification'
+import { pushSessionToBackend } from './sync'
 
 const K = {
   profile: 'canto.profile.v1',
@@ -103,6 +104,27 @@ export function addSession(s: SessionRecord): void {
   const all = getSessions()
   all.push(s)
   write(K.sessions, all)
+  pushSessionToBackend(s) // sync com o backend (offline-tolerante)
+}
+
+/** Mescla sessões vindas do backend no store local (dedupe por id; servidor vence). */
+export function mergeServerSessions(server: SessionRecord[]): void {
+  const byId = new Map<string, SessionRecord>()
+  for (const s of getSessions()) byId.set(s.id, s)
+  for (const s of server) byId.set(s.id, { ...byId.get(s.id), ...s })
+  const merged = Array.from(byId.values()).sort((a, b) => a.dateISO.localeCompare(b.dateISO))
+  write(K.sessions, merged)
+}
+
+/** Limpa os dados locais do usuário (usar no logout, para não vazar entre contas). */
+export function clearUserData(): void {
+  for (const k of [K.sessions, K.baseline, K.rangeHistory, K.achievements, K.seenOnboarding, K.profile]) {
+    try {
+      localStorage.removeItem(k)
+    } catch {
+      /* ignore */
+    }
+  }
 }
 
 // ---------- Streak (derivado das sessões) ----------

@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useApp } from '../app/AppContext'
+import { useAuth } from '../app/AuthContext'
 import { setProfile, setSettings } from '../data/store'
 import { midiLabel } from '../audio/notes'
 import { Icon } from '../components/ui/Icon'
 
 export default function Settings() {
   const { engine, micStatus, profile, settings, baseline, reload } = useApp()
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
   const [name, setName] = useState(profile.name)
   const [goal, setGoal] = useState(profile.goal)
   const [gate, setGate] = useState(settings.noiseGate)
@@ -38,6 +41,11 @@ export default function Settings() {
     location.href = '/'
   }
 
+  async function doLogout() {
+    await logout()
+    navigate('/auth', { replace: true })
+  }
+
   return (
     <div className="page">
       <div className="page-head">
@@ -55,6 +63,23 @@ export default function Settings() {
           )}
         </button>
       </div>
+
+      {user && (
+        <div className="card reveal r0" style={{ marginBottom: 18 }}>
+          <span className="card-title">Conta</span>
+          <div className="setting-row">
+            <div>
+              <div className="setting-label">{user.email}</div>
+              <div className="setting-desc">
+                Organização <strong>{user.tenantSlug}</strong> · perfil {user.role.toLowerCase()}. Seu progresso sincroniza com esta conta.
+              </div>
+            </div>
+            <button className="btn btn--sm" onClick={doLogout}>
+              <Icon name="lock" /> Sair
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-2">
         <div className="card reveal r0">
@@ -146,8 +171,8 @@ export default function Settings() {
         <span className="card-title">Dados</span>
         <div className="setting-row">
           <div>
-            <div className="setting-label">Tudo fica no seu dispositivo</div>
-            <div className="setting-desc">Seu áudio nunca sai do navegador. Range, sessões e preferências ficam só aqui neste aparelho.</div>
+            <div className="setting-label">Seu áudio nunca sai do dispositivo</div>
+            <div className="setting-desc">O microfone é processado no navegador — só as métricas numéricas (afinação, registro, vibrato) sincronizam com sua conta. O botão apaga a cópia local deste aparelho.</div>
           </div>
           <button className="btn btn--danger btn--sm" onClick={resetAll}>
             Apagar meus dados

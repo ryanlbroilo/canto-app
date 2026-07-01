@@ -1,0 +1,145 @@
+// Cliente HTTP do backend do Canto: Bearer + refresh automático em 401.
+// O token fica no localStorage; a chave da EVA continua SÓ no proxy (server-side).
+
+const API_URL = ((import.meta as unknown as { env: Record<string, string> }).env?.VITE_API_URL as string) || 'http://localhost:3333/api'
+const AUTH_KEY = 'canto.auth.v1'
+
+export interface AuthUserInfo {
+  id: string
+  email: string
+  name: string | null
+  role: string
+  tenantId: string
+  tenantSlug: string
+}
+interface Tokens {
+  accessToken: string
+  refreshToken: string
+}
+interface StoredAuth {
+  user: AuthUserInfo
+  tokens: Tokens
+}
+
+export class ApiError extends Error {
+  constructor(
+    public status: number,
+    public body: string,
+  ) {
+    super(`API ${status}`)
+  }
+  /** mensagem amigável extraída do corpo JSON, quando houver */
+  friendly(): string {
+    try {
+      const j = JSON.parse(this.body)
+      const m = j?.message
+      return Array.isArray(m) ? m.join(' · ') : m || `Erro ${this.status}`
+    } catch {
+      return `Erro ${this.status}`
+    }
+  }
+}
+
+let memAuth: StoredAuth | null = loadAuth()
+
+function loadAuth(): StoredAuth | null {
+  try {
+    const s = localStorage.getItem(AUTH_KEY)
+    return s ? (JSON.parse(s) as StoredAuth) : null
+  } catch {
+    return null
+  }
+}
+function saveAuth(a: StoredAuth | null): void {
+  memAuth = a
+  try {
+    if (a) localStorage.setItem(AUTH_KEY, JSON.stringify(a))
+    else localStorage.removeItem(AUTH_KEY)
+  } catch {
+    /* ignore */
+  }
+}
+
+export const currentUser = (): AuthUserInfo | null => memAuth?.user ?? null
+export const isAuthed = (): boolean => !!memAuth
+
+async function tryRefresh(): Promise<boolean> {
+  if (!memAuth) return false
+  try {
+    const res = await fetch(`${API_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken: memAuth.tokens.refreshToken }),
+    })
+    if (!res.ok) {
+      saveAuth(null)
+      return false
+    }
+    const data = (await res.json()) as Tokens
+    saveAuth({ user: memAuth.user, tokens: { accessToken: data.accessToken, refreshToken: data.refreshToken } })
+    return true
+  } catch {
+    return false
+  }
+}
+
+interface ApiOpts {
+  method?: string
+  body?: unknown
+  auth?: boolean // default true
+}
+
+/** Faz uma chamada à API. Em 401, tenta refresh UMA vez e repete. */
+export async function api<T>(path: string, opts: ApiOpts = {}): Promise<T> {
+  const useAuth = opts.auth !== false
+  const send = (): Promise<Response> => {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (useAuth && memAuth) headers.Authorization = `Bearer ${memAuth.tokens.accessToken}`
+    return fetch(`${API_URL}${path}`, {
+      method: opts.method ?? 'GET',
+      headers,
+      body: opts.body != null ? JSON.stringify(opts.body) : undefined,
+    })
+  }
+
+  let res = await send()
+  if (res.status === 401 && useAuth && memAuth) {
+    if (await tryRefresh()) res = await send()
+  }
+  if (!res.ok) {
+    throw new ApiError(res.status, await res.text().catch(() => ''))
+  }
+  if (res.status === 204) return undefined as T
+  return (await res.json()) as T
+}
+
+// ---------- Auth ----------
+export interface RegisterInput {
+  tenantName: string
+  email: string
+  password: string
+  name?: string
+}
+export interface LoginInput {
+  tenantSlug: string
+  email: string
+  password: string
+}
+
+export async function apiRegister(input: RegisterInput): Promise<AuthUserInfo> {
+  const r = await api<{ user: AuthUserInfo; tokens: Tokens }>('/auth/register', { method: 'POST', body: input, auth: false })
+  saveAuth({ user: r.user, tokens: r.tokens })
+  return r.user
+}
+export async function apiLogin(input: LoginInput): Promise<AuthUserInfo> {
+  const r = await api<{ user: AuthUserInfo; tokens: Tokens }>('/auth/login', { method: 'POST', body: input, auth: false })
+  saveAuth({ user: r.user, tokens: r.tokens })
+  return r.user
+}
+export async function apiLogout(): Promise<void> {
+  if (memAuth) {
+    await api('/auth/logout', { method: 'POST', body: { refreshToken: memAuth.tokens.refreshToken }, auth: false }).catch(() => undefined)
+  }
+  saveAuth(null)
+}
+export const apiMe = (): Promise<AuthUserInfo> => api<AuthUserInfo>('/auth/me')
