@@ -5,13 +5,22 @@ import { getExercise } from '../data/exercises'
 import { addSession, newId } from '../data/store'
 import { PitchEngine } from '../audio/PitchEngine'
 import { PitchGraph } from '../components/PitchGraph'
-import { Exercise, FeatureReport, VocalBaseline } from '../data/types'
+import { Exercise, ExerciseKind, FeatureReport, VocalBaseline } from '../data/types'
 import { freqToMidiFloat, midiLabel } from '../audio/notes'
 import { centsZone } from '../theme'
-import { Icon } from '../components/ui/Icon'
+import { Icon, IconName } from '../components/ui/Icon'
 import { SessionAggregator } from '../audio/session'
 import { VoiceInsights } from '../components/audio/VoiceInsights'
 import { SessionSummary } from '../components/audio/SessionSummary'
+
+// Ícone por tipo de exercício (espelha a página de Exercícios).
+const KIND_ICON: Record<ExerciseKind, IconName> = {
+  breathing: 'lungs',
+  siren: 'wave',
+  scale: 'target',
+  interval: 'target',
+  sustain: 'gauge',
+}
 
 export default function ExercisePlayer() {
   const { id } = useParams()
@@ -63,12 +72,14 @@ export default function ExercisePlayer() {
       </div>
 
       <div className="card card--glow">
+        {/* key={ex.id}: ao ir pro próximo exercício adaptativo (mesma rota, id novo),
+            o player remonta limpo em 'ready' em vez de manter o estado 'done'. */}
         {ex.kind === 'breathing' ? (
-          <Breathing ex={ex} onFinish={finish} onExit={() => navigate('/exercicios')} />
+          <Breathing key={ex.id} ex={ex} onFinish={finish} onExit={() => navigate('/exercicios')} />
         ) : ex.kind === 'siren' ? (
-          <Siren engine={engine} ex={ex} onFinish={finish} onExit={() => navigate('/exercicios')} />
+          <Siren key={ex.id} engine={engine} ex={ex} onFinish={finish} onExit={() => navigate('/exercicios')} />
         ) : (
-          <Sequence engine={engine} ex={ex} baseline={baseline} onFinish={finish} onExit={() => navigate('/exercicios')} />
+          <Sequence key={ex.id} engine={engine} ex={ex} baseline={baseline} onFinish={finish} onExit={() => navigate('/exercicios')} />
         )}
       </div>
     </div>
@@ -461,6 +472,8 @@ function Result({
           <SessionSummary report={report} />
         </div>
       )}
+      {/* Fecha o loop adaptativo: o próximo passo recomendado logo abaixo do resumo. */}
+      <NextExercise />
       <div className="controls" style={{ justifyContent: 'center' }}>
         <button className="btn btn--primary" onClick={onRepeat}>
           Repetir
@@ -469,6 +482,40 @@ function Result({
           Voltar aos exercícios
         </button>
       </div>
+    </div>
+  )
+}
+
+/* ---------------- Próximo exercício adaptativo ---------------- */
+// Consome gamification.recommendation (roteador adaptativo, já recomputado após
+// addSession/reload em finish()) e mostra o próximo passo: nome + ícone, o motivo
+// caloroso citando os números, um chip com a tag, e um botão que leva ao player.
+function NextExercise() {
+  const { gamification } = useApp()
+  const navigate = useNavigate()
+  const rec = gamification.recommendation
+  const next = rec ? getExercise(rec.exerciseId) : undefined
+  if (!rec || !next) return null
+
+  return (
+    <div className="next-ex" style={{ width: '100%', maxWidth: 520 }}>
+      <div className="next-ex-head">
+        <Icon name="route" size={15} />
+        <span>Próximo passo sugerido</span>
+        <span className="badge badge--gold next-ex-tag">{rec.tag}</span>
+      </div>
+      <div className="next-ex-card">
+        <span className="ex-icon">
+          <Icon name={KIND_ICON[next.kind]} size={22} />
+        </span>
+        <div className="grow" style={{ textAlign: 'left' }}>
+          <div className="ex-name">{next.name}</div>
+          <p className="next-ex-reason">{rec.reason}</p>
+        </div>
+      </div>
+      <button className="btn btn--primary" onClick={() => navigate(`/exercicios/${next.id}`)}>
+        <Icon name="play" /> Fazer próximo
+      </button>
     </div>
   )
 }
