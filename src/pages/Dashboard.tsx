@@ -1,8 +1,17 @@
+import '../styles/dashboard.css'
 import { Link } from 'react-router-dom'
 import { useApp } from '../app/AppContext'
 import { AudioBlob } from '../components/audio/AudioBlob'
 import { Icon } from '../components/ui/Icon'
+import type { IconName } from '../components/ui/Icon'
 import { midiLabel } from '../audio/notes'
+import { SKILL_BY_ID } from '../data/skills'
+import { TRACKS, trackForLevel } from '../data/tracks'
+import { ACHIEVEMENTS } from '../data/achievements'
+import { getExercise } from '../data/exercises'
+import type { ExerciseKind, TrackLevel } from '../data/types'
+
+// ---------- helpers de apresentação ----------
 
 function greeting(name: string): string {
   const h = new Date().getHours()
@@ -10,11 +19,29 @@ function greeting(name: string): string {
   return name ? `${part}, ${name.split(' ')[0]}` : part
 }
 
+// Cada tipo de exercício ganha um ícone próprio no card de próximo passo / trilha.
+const KIND_ICON: Record<ExerciseKind, IconName> = {
+  breathing: 'lungs',
+  siren: 'wave',
+  scale: 'music',
+  interval: 'target',
+  sustain: 'gauge',
+}
+
+// Nível numérico de gamificação → nível da trilha (currículo tem 3 faixas).
+// 1–2 iniciante, 3–4 intermediário, 5+ avançado. Simples e honesto.
+function trackLevelFor(level: number): TrackLevel {
+  if (level >= 5) return 'avancado'
+  if (level >= 3) return 'intermediario'
+  return 'iniciante'
+}
+
+// Mini-calendário: os últimos 7 dias, marcando os praticados e o de hoje.
 function last7(days: string[]) {
   const today = new Date()
-  const out: { key: string; label: string; done: boolean; today: boolean }[] = []
   const set = new Set(days)
   const wd = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
+  const out: { key: string; label: string; done: boolean; today: boolean }[] = []
   for (let i = 6; i >= 0; i--) {
     const d = new Date(today)
     d.setDate(today.getDate() - i)
@@ -24,117 +51,324 @@ function last7(days: string[]) {
   return out
 }
 
+const todayKey = () => new Date().toISOString().slice(0, 10)
+
 export default function Dashboard() {
-  const { engine, baseline, profile, streak, sessions } = useApp()
+  const { engine, baseline, profile, streak, sessions, gamification } = useApp()
+  const { totalXp, level, xpIntoLevel, xpForNext, skills, achievements, recommendation, exercisesDone } =
+    gamification
+
+  const isNew = sessions.length === 0
   const week = last7(streak.days)
   const weekSessions = sessions.filter((s) => Date.now() - new Date(s.dateISO).getTime() < 7 * 864e5).length
   const octaves = baseline ? ((baseline.highMidi - baseline.lowMidi) / 12).toFixed(1) : '—'
-  const lastSession = sessions[sessions.length - 1]
+
+  // Progresso de XP dentro do nível (0..1) para a barra do hero.
+  const xpPct = xpForNext > 0 ? Math.min(100, Math.round((xpIntoLevel / xpForNext) * 100)) : 0
+
+  // --- Trilha ativa (derivada do nível) ---
+  const trackLevel = trackLevelFor(level)
+  const track = trackForLevel(trackLevel)
+  // Um exercício da trilha está "dominado" quando a melhor pontuação ≥ 90.
+  const dominated = (id: string) => (exercisesDone[id]?.bestScore ?? 0) >= 90
+  const trackDone = track.exerciseIds.filter(dominated).length
+  const trackPct = track.exerciseIds.length
+    ? Math.round((trackDone / track.exerciseIds.length) * 100)
+    : 0
+  // Próximo passo da trilha: primeiro exercício ainda não dominado.
+  const nextTrackId = track.exerciseIds.find((id) => !dominated(id))
+
+  // --- Próximo passo adaptativo (o coração da home) ---
+  // Usa a recomendação da gamificação; se ela não existir (usuário sem sessões
+  // ou sem relatório), cai para o 1º passo da trilha do nível — sempre há um CTA.
+  const recId = recommendation?.exerciseId ?? nextTrackId ?? track.exerciseIds[0]
+  const recEx = recId ? getExercise(recId) : undefined
+  const recReason =
+    recommendation?.reason ??
+    (isNew
+      ? 'Comece por aqui: um aquecimento curto para o EVA ouvir sua voz e montar seu plano.'
+      : 'Continue de onde parou na sua trilha — este é o próximo passo do currículo.')
+  const recTag = recommendation?.tag ?? 'começar'
+
+  // --- Missão do dia (honesta, derivada das sessões) ---
+  const didToday = streak.days.includes(todayKey())
+  const mission = didToday
+    ? { title: 'Missão cumprida hoje ✦', sub: 'Você já treinou hoje — sua ofensiva segue viva.' }
+    : {
+        title: 'Faça 1 exercício hoje',
+        sub: 'Poucos minutos bastam para manter a ofensiva e destravar XP.',
+      }
+
+  // --- Conquistas ---
+  const unlockedSet = new Set(achievements)
+  const unlockedCount = unlockedSet.size
 
   return (
     <div className="page">
-      {/* Hero */}
-      <div className="card card--glow hero-card reveal r0" style={{ marginBottom: 18 }}>
-        <div>
-          <div className="hero-greet">{greeting(profile.name)} 🎙️</div>
-          <p className="hero-sub">
-            {baseline
-              ? 'Pronto para treinar? Comece pelo aquecimento e mantenha sua ofensiva viva.'
-              : 'Vamos começar medindo sua extensão vocal — leva menos de um minuto.'}
-          </p>
-          <div className="row gap-2 wrap">
-            {baseline ? (
-              <>
-                <Link to="/exercicios" className="btn btn--primary">
-                  <Icon name="play" /> Treinar agora
+      <div className="dsh">
+        {/* ============ HERO com XP / nível ============ */}
+        <div className="card card--glow dsh-hero reveal r0">
+          <div className="dsh-hero-body">
+            <div className="dsh-eyebrow">
+              <Icon name="spark" size={14} /> Seu estúdio
+            </div>
+            <h1 className="dsh-greet">
+              {greeting(profile.name)} <span className="dsh-wave">🎙️</span>
+            </h1>
+            <p className="dsh-sub">
+              {isNew
+                ? 'Bem-vindo ao Canto. Vamos ouvir sua voz e montar um plano só seu — leva poucos minutos.'
+                : 'Pronto para treinar? Seu próximo passo já está escolhido logo abaixo.'}
+            </p>
+
+            {/* barra de XP / nível */}
+            <div className="dsh-xp">
+              <div className="dsh-xp-top">
+                <div className="dsh-level">
+                  <span className="dsh-level-badge">{level}</span>
+                  <span className="dsh-level-label">
+                    nível
+                    <b>Nível {level}</b>
+                  </span>
+                </div>
+                <span className="dsh-xp-count">
+                  <b>{xpIntoLevel}</b> / {xpForNext} XP p/ nível {level + 1}
+                </span>
+              </div>
+              <div className="dsh-xp-track" role="progressbar" aria-valuenow={xpPct} aria-valuemin={0} aria-valuemax={100}>
+                <div className="dsh-xp-fill" style={{ width: `${Math.max(xpPct, 2)}%` }} />
+              </div>
+              <span className="dsh-xp-count" style={{ marginTop: 2 }}>
+                {totalXp} XP no total
+              </span>
+            </div>
+
+            <div className="dsh-hero-actions">
+              {baseline ? (
+                <>
+                  <Link to="/exercicios" className="btn btn--primary">
+                    <Icon name="play" /> Treinar agora
+                  </Link>
+                  <Link to="/praticar" className="btn">
+                    <Icon name="mic" /> Prática livre
+                  </Link>
+                </>
+              ) : (
+                <Link to="/onboarding" className="btn btn--primary">
+                  <Icon name="gauge" /> Fazer teste de range
                 </Link>
-                <Link to="/praticar" className="btn">
-                  <Icon name="mic" /> Prática livre
+              )}
+            </div>
+          </div>
+
+          <div className="dsh-blob-wrap">
+            <AudioBlob engine={engine} size={172} />
+          </div>
+        </div>
+
+        {/* ============ COLUNA ESQUERDA ============ */}
+        <div className="dsh-col">
+          {/* Próximo passo (adaptativo) — destaque */}
+          <div className="card dsh-next reveal r1">
+            <div className="dsh-next-head">
+              <span className="dsh-next-eyebrow">Próximo passo</span>
+              {recTag && (
+                <span className="badge badge--gold">
+                  <Icon name="bolt" size={12} /> {recTag}
+                </span>
+              )}
+            </div>
+
+            {recEx ? (
+              <>
+                <div className="dsh-next-main">
+                  <span className="dsh-next-icon">
+                    <Icon name={KIND_ICON[recEx.kind]} />
+                  </span>
+                  <div style={{ minWidth: 0 }}>
+                    <div className="dsh-next-title">{recEx.name}</div>
+                    <div className="dsh-next-meta">
+                      <span>{recEx.durationMin} min</span>
+                      <span className="faint">·</span>
+                      <span>{recEx.focus}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="dsh-next-reason">
+                  <span className="dsh-eva-mark">EVA:</span> {recReason}
+                </p>
+
+                <Link to={`/exercicios/${recEx.id}`} className="btn btn--primary btn--block">
+                  <Icon name="play" /> Começar
                 </Link>
               </>
             ) : (
-              <Link to="/onboarding" className="btn btn--primary">
-                <Icon name="gauge" /> Fazer teste de range
-              </Link>
+              <p className="hint">Assim que você fizer o teste de range, monto seu primeiro passo.</p>
             )}
           </div>
-        </div>
-        <AudioBlob engine={engine} size={168} />
-      </div>
 
-      <div className="grid grid-dash">
-        {/* coluna esquerda */}
-        <div className="stack gap-3">
-          {/* stats */}
-          <div className="stat-row">
-            <div className="card reveal r1">
-              <div className="stat">
-                <div className="stat-value">
-                  {streak.current}
-                  <span style={{ fontSize: 16, color: 'var(--muted)' }}> {streak.current === 1 ? 'dia' : 'dias'}</span>
-                </div>
-                <div className="stat-label">Ofensiva atual 🔥</div>
+          {/* Trilha ativa */}
+          <div className="card reveal r2">
+            <div className="dsh-track-head">
+              <div>
+                <span className="card-title">Sua trilha</span>
+                <div className="dsh-track-name">{track.name}</div>
               </div>
+              <span className="badge badge--gold">
+                <Icon name="route" size={12} /> {trackLevel}
+              </span>
             </div>
-            <div className="card reveal r2">
-              <div className="stat">
-                <div className="stat-value">{weekSessions}</div>
-                <div className="stat-label">Sessões na semana</div>
+            <p className="dsh-track-hint">{track.hint}</p>
+
+            <div className="dsh-track-bar-row">
+              <div className="bar" style={{ flex: 1 }}>
+                <div className="bar-fill" style={{ width: `${trackPct}%` }} />
               </div>
+              <span className="dsh-xp-count">
+                <b>{trackDone}</b>/{track.exerciseIds.length}
+              </span>
             </div>
-            <div className="card reveal r3">
-              <div className="stat">
-                <div className="stat-value">
-                  <span className="mono">{octaves}</span>
-                </div>
-                <div className="stat-label">Oitavas de extensão</div>
+
+            {/* escada de passos: dominados / próximo / bloqueados */}
+            <div className="dsh-steps">
+              {track.exerciseIds.map((id) => {
+                const ex = getExercise(id)
+                if (!ex) return null
+                const state = dominated(id) ? 'done' : id === nextTrackId ? 'next' : 'todo'
+                return (
+                  <Link key={id} to={`/exercicios/${id}`} className="dsh-step" data-state={state} title={ex.name}>
+                    <span className="dsh-step-dot">
+                      <Icon name={state === 'done' ? 'check' : KIND_ICON[ex.kind]} />
+                    </span>
+                    <span className="dsh-step-label">{ex.name}</span>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Skills (mini) */}
+          <div className="card reveal r3">
+            <div className="dsh-sec-head">
+              <span className="card-title">Suas competências</span>
+              <Link to="/progresso" className="dsh-link">
+                ver progresso <Icon name="chevron" size={14} />
+              </Link>
+            </div>
+            <div className="dsh-skills">
+              {skills.map((sp) => {
+                const meta = SKILL_BY_ID[sp.id]
+                if (!meta) return null
+                return (
+                  <span className="dsh-skill" key={sp.id} title={meta.short}>
+                    <span className="dsh-skill-orb" style={{ background: meta.color }}>
+                      <Icon name={meta.icon} />
+                    </span>
+                    <span className="dsh-skill-name">{meta.name}</span>
+                    <span className="dsh-skill-lvl">N{sp.level}</span>
+                  </span>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Conquistas */}
+          <div className="card reveal r4">
+            <div className="dsh-sec-head">
+              <span className="card-title">Conquistas</span>
+              <span className="dsh-ach-count">
+                {unlockedCount}/{ACHIEVEMENTS.length}
+              </span>
+            </div>
+            <div className="dsh-ach-grid">
+              {ACHIEVEMENTS.map((a) => {
+                const unlocked = unlockedSet.has(a.id)
+                return (
+                  <div
+                    className="dsh-ach"
+                    key={a.id}
+                    data-unlocked={unlocked}
+                    title={`${a.label} — ${a.desc}`}
+                  >
+                    <span className="dsh-ach-medal">
+                      <Icon name={a.icon} />
+                      {!unlocked && (
+                        <span className="dsh-ach-lock">
+                          <Icon name="lock" size={10} />
+                        </span>
+                      )}
+                    </span>
+                    <span className="dsh-ach-label">{a.label}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* ============ COLUNA DIREITA ============ */}
+        <div className="dsh-col">
+          {/* Missão do dia */}
+          <div className="card reveal r1" data-done={didToday}>
+            <span className="card-title">Missão do dia</span>
+            <div className="dsh-mission" data-done={didToday} style={{ marginTop: 14 }}>
+              <span className="dsh-mission-check">
+                <Icon name={didToday ? 'check' : 'target'} size={22} />
+              </span>
+              <div className="dsh-mission-body">
+                <div className="dsh-mission-title">{mission.title}</div>
+                <div className="dsh-mission-sub">{mission.sub}</div>
               </div>
             </div>
           </div>
 
-          {/* semana */}
+          {/* Streak + números */}
           <div className="card reveal r2">
-            <div className="row spread" style={{ marginBottom: 14 }}>
+            <div className="dsh-sec-head">
               <span className="card-title">Sua semana</span>
               <span className="badge badge--gold">
                 <Icon name="flame" size={13} /> recorde {streak.longest}d
               </span>
             </div>
-            <div className="mini-cal">
+            <div className="dsh-stat-row" style={{ marginTop: 14 }}>
+              <div className="dsh-stat">
+                <div className="dsh-stat-value dsh-flame">
+                  {streak.current}
+                  <span className="dsh-unit">{streak.current === 1 ? 'dia' : 'dias'}</span>
+                </div>
+                <div className="dsh-stat-label">Ofensiva 🔥</div>
+              </div>
+              <div className="dsh-stat">
+                <div className="dsh-stat-value">{weekSessions}</div>
+                <div className="dsh-stat-label">Sessões</div>
+              </div>
+              <div className="dsh-stat">
+                <div className="dsh-stat-value">
+                  <span className="mono">{octaves}</span>
+                </div>
+                <div className="dsh-stat-label">Oitavas</div>
+              </div>
+            </div>
+            <hr className="dsh-hr" />
+            <div className="dsh-week">
               {week.map((d) => (
-                <div key={d.key} className="mini-cal-day" data-done={d.done} data-today={d.today}>
+                <div key={d.key} className="dsh-day" data-done={d.done} data-today={d.today}>
                   {d.label}
                 </div>
               ))}
             </div>
           </div>
 
-          {/* rotina de hoje */}
+          {/* Range */}
           <div className="card reveal r3">
-            <span className="card-title">Rotina sugerida de hoje</span>
-            <div className="stack gap-2" style={{ marginTop: 14 }}>
-              <RoutineRow icon="lungs" name="Respiração diafragmática" meta="2 min · aquecimento" to="/exercicios/respiracao" />
-              <RoutineRow icon="wave" name="Sirene / lip trill" meta="3 min · conectar registros" to="/exercicios/sirene" />
-              <RoutineRow icon="target" name="Escala maior" meta="4 min · precisão" to="/exercicios/escala-maior" />
-            </div>
-          </div>
-        </div>
-
-        {/* coluna direita */}
-        <div className="stack gap-3">
-          {/* range */}
-          <div className="card reveal r2">
             <span className="card-title">Seu range</span>
             {baseline ? (
               <>
-                <div className="row gap-2 center" style={{ justifyContent: 'center', margin: '16px 0 8px' }}>
-                  <span className="range-note" style={{ fontSize: 38 }}>
-                    {midiLabel(baseline.lowMidi)}
-                  </span>
-                  <span className="range-arrow">→</span>
-                  <span className="range-note" style={{ fontSize: 38 }}>
-                    {midiLabel(baseline.highMidi)}
-                  </span>
+                <div className="dsh-range-notes">
+                  <span className="dsh-range-note">{midiLabel(baseline.lowMidi)}</span>
+                  <span className="dsh-range-arrow">→</span>
+                  <span className="dsh-range-note">{midiLabel(baseline.highMidi)}</span>
                 </div>
                 <p className="hint center">
                   {baseline.voiceType} (aprox.){baseline.includesFalsetto ? ' · topo c/ falsete' : ''}
@@ -145,26 +379,31 @@ export default function Dashboard() {
               </>
             ) : (
               <p className="hint" style={{ marginTop: 12 }}>
-                Ainda não medido. <Link to="/onboarding" style={{ color: 'var(--gold-2)' }}>Fazer teste →</Link>
+                Ainda não medido.{' '}
+                <Link to="/onboarding" style={{ color: 'var(--gold-2)' }}>
+                  Fazer teste →
+                </Link>
               </p>
             )}
           </div>
 
-          {/* EVA tip */}
-          <div className="card reveal r3">
-            <div className="eva-tip">
-              <span className="eva-avatar">
+          {/* EVA */}
+          <div className="card reveal r4">
+            <div className="dsh-eva">
+              <span className="dsh-eva-avatar">
                 <Icon name="spark" size={20} />
               </span>
-              <div>
+              <div className="dsh-eva-body">
                 <div className="row spread">
                   <strong>EVA</strong>
                   <span className="badge">prévia</span>
                 </div>
                 <p className="hint" style={{ marginTop: 6 }}>
-                  {lastSession
-                    ? `Na última sessão você acertou ${Math.round(lastSession.notesHitPct)}% das notas (desvio médio ${Math.round(lastSession.avgCentsDev)}¢). ${lastSession.notesHitPct > 70 ? 'Mandou bem — bora subir a dificuldade.' : 'Vamos focar em sustentar no centro hoje.'}`
-                    : 'Assim que você treinar, eu analiso sua afinação e monto o próximo passo. Bora começar?'}
+                  {isNew
+                    ? 'Assim que você treinar, eu analiso sua afinação e ajusto o próximo passo. Bora começar?'
+                    : recommendation
+                      ? recommendation.reason
+                      : 'Continue treinando — a cada sessão eu refino seu plano.'}
                 </p>
                 <Link to="/eva" className="btn btn--sm" style={{ marginTop: 10 }}>
                   Conversar com a EVA
@@ -175,24 +414,5 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
-  )
-}
-
-function RoutineRow({ icon, name, meta, to }: { icon: 'lungs' | 'wave' | 'target'; name: string; meta: string; to: string }) {
-  return (
-    <Link to={to} className="card ex-card" style={{ padding: '12px 14px' }}>
-      <span className="ex-icon" style={{ width: 40, height: 40 }}>
-        <Icon name={icon} />
-      </span>
-      <div>
-        <div className="ex-name" style={{ fontSize: 14.5 }}>
-          {name}
-        </div>
-        <div className="ex-meta">{meta}</div>
-      </div>
-      <span className="ex-go">
-        <Icon name="chevron" size={18} />
-      </span>
-    </Link>
   )
 }
