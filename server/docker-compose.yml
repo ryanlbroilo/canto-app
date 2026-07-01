@@ -1,0 +1,75 @@
+name: canto
+
+# Env compartilhado entre api e worker (mesma imagem, comandos diferentes).
+x-app-env: &app-env
+  NODE_ENV: production
+  DATABASE_URL: postgresql://${POSTGRES_USER:-canto}:${POSTGRES_PASSWORD:-canto}@postgres:5432/${POSTGRES_DB:-canto}?schema=public
+  REDIS_HOST: redis
+  REDIS_PORT: 6379
+  JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev_access_secret_change_me_0123456789}
+  JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev_refresh_secret_change_me_0123456789}
+  JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-15m}
+  JWT_REFRESH_TTL_DAYS: ${JWT_REFRESH_TTL_DAYS:-7}
+  CORS_ORIGIN: ${CORS_ORIGIN:-*}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-canto}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-canto}
+      POSTGRES_DB: ${POSTGRES_DB:-canto}
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-canto} -d ${POSTGRES_DB:-canto}']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - '${REDIS_PORT_HOST:-6379}:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  api:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      <<: *app-env
+      PORT: 3333
+    # aplica migrations e sobe a API
+    command: sh -c "npx prisma migrate deploy && node dist/main"
+    ports:
+      - '${API_PORT:-3333}:3333'
+
+  worker:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_started
+    environment:
+      <<: *app-env
+    command: node dist/worker
+
+volumes:
+  pgdata:

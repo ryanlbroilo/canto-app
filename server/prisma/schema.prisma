@@ -1,0 +1,95 @@
+// Schema multi-tenant do Canto (isolamento row-level por tenantId).
+// Todo dado de domínio carrega tenantId e é sempre filtrado por ele no serviço.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model Tenant {
+  id        String         @id @default(cuid())
+  name      String
+  slug      String         @unique
+  createdAt DateTime       @default(now())
+  users     User[]
+  sessions  VocalSession[]
+}
+
+model User {
+  id           String         @id @default(cuid())
+  tenantId     String
+  tenant       Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  email        String
+  passwordHash String
+  name         String?
+  role         Role           @default(MEMBER)
+  createdAt    DateTime       @default(now())
+  refreshTokens RefreshToken[]
+  sessions     VocalSession[]
+
+  // e-mail é único DENTRO do tenant (mesmo e-mail pode existir em tenants diferentes)
+  @@unique([tenantId, email])
+  @@index([tenantId])
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+// Sessão de treino sincronizada do cliente (o mesmo SessionRecord do front).
+model VocalSession {
+  id            String    @id @default(cuid())
+  tenantId      String
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientId      String? // id gerado no cliente (idempotência de sync)
+  kind          String // 'practice' | 'exercise'
+  exerciseId    String?
+  label         String
+  durationSec   Int
+  notesHitPct   Float
+  avgCentsDev   Float
+  featureReport Json? // feature-JSON do DSP (a EVA só vê números, nunca áudio)
+  dateISO       DateTime
+  processedAt   DateTime? // preenchido pelo worker da fila
+  xpEarned      Int? // calculado pelo worker
+  createdAt     DateTime  @default(now())
+
+  @@unique([tenantId, userId, clientId])
+  @@index([tenantId, userId])
+}
+
+// Registro de execução de jobs da fila (observabilidade da fila operacional).
+model JobRun {
+  id        String   @id @default(cuid())
+  tenantId  String?
+  queue     String
+  name      String
+  status    String // 'completed' | 'failed'
+  attempts  Int      @default(1)
+  data      Json?
+  result    Json?
+  error     String?
+  createdAt DateTime @default(now())
+
+  @@index([queue, status])
+}
