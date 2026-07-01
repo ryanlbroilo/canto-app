@@ -12,6 +12,7 @@ import { Icon, IconName } from '../components/ui/Icon'
 import { SessionAggregator } from '../audio/session'
 import { VoiceInsights } from '../components/audio/VoiceInsights'
 import { SessionSummary } from '../components/audio/SessionSummary'
+import { BreathingGuide } from '../components/audio/BreathingGuide'
 
 // Ícone por tipo de exercício (espelha a página de Exercícios).
 const KIND_ICON: Record<ExerciseKind, IconName> = {
@@ -88,11 +89,6 @@ export default function ExercisePlayer() {
 
 /* ---------------- Respiração ---------------- */
 function Breathing({ ex, onFinish, onExit }: { ex: Exercise; onFinish: (h: number, d: number, s: number, report?: FeatureReport) => void; onExit: () => void }) {
-  const CYCLE = [
-    { name: 'Inspire', dur: 4, scale: 1.3 },
-    { name: 'Segure', dur: 4, scale: 1.3 },
-    { name: 'Solte', dur: 6, scale: 1 },
-  ]
   const total = ex.durationMin * 60
   const [started, setStarted] = useState(false)
   const [done, setDone] = useState(false)
@@ -113,18 +109,6 @@ function Breathing({ ex, onFinish, onExit }: { ex: Exercise; onFinish: (h: numbe
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [started, done])
 
-  const cycleLen = CYCLE.reduce((a, c) => a + c.dur, 0)
-  const inCycle = clock % cycleLen
-  let acc = 0
-  let phase = CYCLE[0]
-  for (const c of CYCLE) {
-    if (inCycle < acc + c.dur) {
-      phase = c
-      break
-    }
-    acc += c.dur
-  }
-
   if (done) {
     return <Result title="Respiração concluída" score={null} note="Respiração é a base de tudo — apoio e afinação mais estáveis. 👏" onRepeat={() => { setStarted(false); setDone(false); setClock(0) }} onExit={onExit} />
   }
@@ -133,8 +117,8 @@ function Breathing({ ex, onFinish, onExit }: { ex: Exercise; onFinish: (h: numbe
     <div className="player">
       {!started ? (
         <>
-          <p className="hint center" style={{ maxWidth: '44ch' }}>
-            Siga o ritmo do círculo: inspire pelo diafragma (4s), segure (4s), solte devagar (6s). Repita até o fim.
+          <p className="hint center" style={{ maxWidth: '46ch' }}>
+            Siga o corpo: inspire pelo diafragma (4s) — a barriga sai e o diafragma desce —, segure (4s) e solte devagar (6s). Ombros parados. Repita até o fim.
           </p>
           <button className="btn btn--primary" onClick={() => { startRef.current = performance.now(); setStarted(true) }}>
             <Icon name="play" /> Começar
@@ -143,9 +127,7 @@ function Breathing({ ex, onFinish, onExit }: { ex: Exercise; onFinish: (h: numbe
       ) : (
         <>
           <div className="player-step">{Math.max(0, Math.ceil(total - clock))}s restantes</div>
-          <div className="breath-orb" style={{ transform: `scale(${phase.scale})` }}>
-            {phase.name}
-          </div>
+          <BreathingGuide startedAt={startRef.current} running={started && !done} />
           <button className="btn btn--ghost" onClick={onExit}>
             Sair
           </button>
