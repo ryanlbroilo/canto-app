@@ -1,0 +1,292 @@
+/* ============================================================
+   Meu range — enriquecimento da página de extensão vocal.
+   Classes prefixadas `rng-` para não colidir com as `range-*`
+   já existentes em audio.css (que não pode ser tocado).
+   Estética "estúdio noturno": dark quente + mel/âmbar.
+   ============================================================ */
+
+/* ---------- Medidor de firmeza (estabilidade da captura) ---------- */
+.rng-steady {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  opacity: 0.65;
+  transition: opacity 160ms var(--ease);
+}
+.rng-steady[data-active='1'] {
+  opacity: 1;
+}
+.rng-steady-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.rng-steady-label {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  color: var(--muted);
+}
+.rng-steady-verdict {
+  font-size: 13px;
+  font-weight: 600;
+}
+.rng-steady-verdict--ok {
+  color: var(--good);
+}
+.rng-steady-verdict--mid {
+  color: var(--close);
+}
+.rng-steady-verdict--low {
+  color: var(--off);
+}
+.rng-steady-track {
+  position: relative;
+  height: 8px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+.rng-steady-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: var(--r-pill);
+  transition: width 140ms var(--ease);
+}
+.rng-steady-fill--ok {
+  background: linear-gradient(90deg, var(--good), #7ce6bf);
+}
+.rng-steady-fill--mid {
+  background: linear-gradient(90deg, var(--close), var(--gold-2));
+}
+.rng-steady-fill--low {
+  background: linear-gradient(90deg, var(--off), #f2937f);
+}
+
+/* ---------- Chips do resultado ---------- */
+.rng-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+.rng-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--hairline);
+  font-size: 13px;
+  color: var(--text);
+}
+.rng-chip svg {
+  width: 15px;
+  height: 15px;
+  color: var(--gold);
+}
+
+/* ---------- Mapa visual do range ---------- */
+.rng-map {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+/* Banda de referência do tipo vocal */
+.rng-map-refrow {
+  position: relative;
+  height: 20px;
+}
+.rng-map-reflabel {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--faint);
+}
+.rng-map-refband {
+  position: absolute;
+  top: 12px;
+  height: 4px;
+  border-radius: var(--r-pill);
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(233, 180, 76, 0.34),
+    rgba(233, 180, 76, 0.34) 5px,
+    transparent 5px,
+    transparent 10px
+  );
+}
+
+/* Barra principal */
+.rng-map-bar {
+  position: relative;
+  height: 84px;
+  border-radius: var(--r-md);
+  background: var(--panel-2);
+  border: 1px solid var(--hairline);
+  overflow: visible;
+}
+.rng-map-seg {
+  position: absolute;
+  top: 28px;
+  height: 22px;
+  opacity: 0.85;
+}
+.rng-map-seg:first-of-type {
+  border-top-left-radius: var(--r-xs);
+  border-bottom-left-radius: var(--r-xs);
+}
+.rng-map-seg:last-of-type {
+  border-top-right-radius: var(--r-xs);
+  border-bottom-right-radius: var(--r-xs);
+}
+
+/* Tessitura confortável destacada (sobreposta às faixas) */
+.rng-map-tess {
+  position: absolute;
+  top: 22px;
+  height: 34px;
+  border-radius: var(--r-xs);
+  border: 1.5px solid var(--gold-2);
+  background: rgba(243, 205, 115, 0.14);
+  box-shadow: 0 0 18px rgba(233, 180, 76, 0.25);
+}
+
+/* Marca do passaggio */
+.rng-map-pass {
+  position: absolute;
+  top: 16px;
+  height: 46px;
+  width: 2px;
+  background: var(--text);
+  transform: translateX(-1px);
+}
+.rng-map-pass-flag {
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text);
+  background: var(--elev);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-xs);
+  padding: 1px 6px;
+}
+
+/* Extremos rotulados */
+.rng-map-end {
+  position: absolute;
+  bottom: 6px;
+  transform: translateX(-50%);
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--gold-2);
+  white-space: nowrap;
+}
+.rng-map-end--lo {
+  transform: translateX(0);
+}
+.rng-map-end--hi {
+  transform: translateX(-100%);
+}
+
+/* Ticks de oitava (C) */
+.rng-map-tick {
+  position: absolute;
+  top: 54px;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--faint);
+}
+
+/* Legenda */
+.rng-map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+.rng-map-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.rng-map-key i {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  display: inline-block;
+}
+.rng-map-key--tess {
+  background: rgba(243, 205, 115, 0.14) !important;
+  border: 1.5px solid var(--gold-2);
+}
+
+/* ---------- Banner de evolução (deltas) ---------- */
+.rng-delta {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  text-align: left;
+  padding: 13px 16px;
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--hairline);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+}
+.rng-delta svg {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  color: var(--gold);
+}
+.rng-delta strong {
+  color: var(--gold-2);
+}
+.rng-delta--up {
+  border-color: rgba(87, 214, 166, 0.32);
+  background: rgba(87, 214, 166, 0.08);
+}
+.rng-delta--up svg {
+  color: var(--good);
+}
+.rng-delta--first {
+  border-color: var(--hairline-strong);
+  background: rgba(233, 180, 76, 0.07);
+}
+.rng-delta--down {
+  border-color: rgba(242, 109, 91, 0.24);
+  background: rgba(242, 109, 91, 0.06);
+}
+.rng-delta--down svg {
+  color: var(--close);
+}
+
+/* Responsivo: em telas estreitas, encolhe rótulos do mapa */
+@media (max-width: 560px) {
+  .rng-map-end {
+    font-size: 13px;
+  }
+  .rng-delta {
+    font-size: 13px;
+  }
+}

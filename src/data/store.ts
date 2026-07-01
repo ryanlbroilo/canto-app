@@ -54,6 +54,45 @@ export function saveBaseline(b: VocalBaseline): void {
 }
 export const getRangeHistory = (): VocalBaseline[] => read<VocalBaseline[]>(K.rangeHistory, [])
 
+/**
+ * Baseline anterior ao atual (penúltimo no histórico), para comparar deltas no
+ * resultado do teste. O último item do histórico é o baseline recém-salvo; o
+ * "anterior" é o de índice -2. Devolve null se não houver teste prévio.
+ * ADITIVO: novo helper, não muda assinaturas existentes.
+ */
+export function getPreviousBaseline(): VocalBaseline | null {
+  const hist = getRangeHistory()
+  return hist.length >= 2 ? hist[hist.length - 2] : null
+}
+
+/**
+ * Delta entre o teste mais recente e o anterior: semitons ganhos no grave/agudo,
+ * variação de extensão total e dias decorridos. Números positivos = melhora
+ * (grave mais grave, agudo mais agudo). null quando é o primeiro teste.
+ * ADITIVO: novo helper.
+ */
+export interface RangeDelta {
+  lowSemis: number // negativo = desceu mais grave (ganho); usamos sinal cru
+  highSemis: number // positivo = subiu mais agudo (ganho)
+  totalSemis: number // variação da extensão (high-low) atual vs anterior
+  days: number // dias desde o teste anterior
+  prevAt: string
+}
+export function getRangeDelta(current: VocalBaseline): RangeDelta | null {
+  const prev = getPreviousBaseline()
+  if (!prev) return null
+  const curSpan = current.highMidi - current.lowMidi
+  const prevSpan = prev.highMidi - prev.lowMidi
+  const ms = new Date(current.measuredAt).getTime() - new Date(prev.measuredAt).getTime()
+  return {
+    lowSemis: prev.lowMidi - current.lowMidi, // >0 quando o grave desceu (ganhou)
+    highSemis: current.highMidi - prev.highMidi, // >0 quando o agudo subiu (ganhou)
+    totalSemis: curSpan - prevSpan,
+    days: Math.max(0, Math.round(ms / 86_400_000)),
+    prevAt: prev.measuredAt,
+  }
+}
+
 // ---------- Onboarding ----------
 export const hasSeenOnboarding = (): boolean => read<boolean>(K.seenOnboarding, false)
 export const setSeenOnboarding = () => write(K.seenOnboarding, true)
