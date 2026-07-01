@@ -1,3 +1,5 @@
+import type { IconName } from '../components/ui/Icon'
+
 export interface VocalBaseline {
   lowMidi: number
   highMidi: number
@@ -23,6 +25,27 @@ export interface Settings {
 export type ExerciseKind = 'breathing' | 'siren' | 'scale' | 'interval' | 'sustain'
 export type ExercisePhase = 'aquecimento' | 'tecnica' | 'aplicacao'
 
+// ---- Skills (as 7 competências vocais que a plataforma treina) ----
+export type SkillId =
+  | 'afinacao'
+  | 'respiracao'
+  | 'passaggio'
+  | 'vibrato'
+  | 'sustentacao'
+  | 'ressonancia'
+  | 'extensao'
+
+export interface Skill {
+  id: SkillId
+  name: string
+  icon: IconName
+  color: string
+  /** 1 linha do que essa skill treina */
+  short: string
+}
+
+export type TrackLevel = 'iniciante' | 'intermediario' | 'avancado'
+
 export interface Exercise {
   id: string
   name: string
@@ -35,6 +58,67 @@ export interface Exercise {
   pattern?: number[]
   /** Segundos por nota sustentada */
   holdSec?: number
+  /** Nível da trilha em que o exercício mora */
+  level: TrackLevel
+  /** Skills que o exercício desenvolve */
+  skills: SkillId[]
+  /** XP base concedido ao completar (antes dos fatores de desempenho) */
+  xp: number
+  /** Dificuldade relativa 1..5 (peso pedagógico) */
+  difficulty?: 1 | 2 | 3 | 4 | 5
+}
+
+// ---- Trilhas de aprendizado (currículo ordenado estilo Duolingo) ----
+export interface LearningTrack {
+  id: string
+  level: TrackLevel
+  name: string
+  hint: string
+  /** Sequência ordenada de exercícios que forma o currículo do nível */
+  exerciseIds: string[]
+}
+
+// ---- Conquistas ----
+export interface Achievement {
+  id: string
+  icon: IconName
+  label: string
+  desc: string
+  category: 'consistencia' | 'afinacao' | 'registro' | 'extensao' | 'vibrato' | 'marco'
+}
+
+// ---- Progresso por skill (derivado das sessões) ----
+export interface SkillProgress {
+  id: SkillId
+  xp: number
+  level: number
+  /** média de notesHitPct das últimas sessões que treinaram a skill (0..100) */
+  last5Avg: number
+  /** variação recente do desempenho: negativo, 0 ou positivo */
+  trend: number
+}
+
+// ---- Recomendação do roteador adaptativo ----
+export interface AdaptiveRecommendation {
+  exerciseId: string
+  /** motivo caloroso e específico, citando os números do último relatório */
+  reason: string
+  /** rótulo curto (ex.: "passaggio", "afinação", "evoluir") */
+  tag: string
+}
+
+// ---- Estado agregado de gamificação (puro, recomputável das sessões) ----
+export interface GamificationState {
+  totalXp: number
+  level: number
+  xpIntoLevel: number
+  xpForNext: number
+  skills: SkillProgress[]
+  /** ids das conquistas desbloqueadas */
+  achievements: string[]
+  recommendation: AdaptiveRecommendation | null
+  /** por exerciseId: quantas vezes fez e melhor pontuação (0..100) */
+  exercisesDone: Record<string, { count: number; bestScore: number }>
 }
 
 export interface SessionRecord {
@@ -50,6 +134,8 @@ export interface SessionRecord {
   avgCentsDev: number
   /** feature-JSON completo (contrato DSP→EVA), quando disponível */
   featureReport?: FeatureReport
+  /** XP concedido pela sessão (cacheado; recomputável por xpForSession) */
+  xpEarned?: number
 }
 
 export interface Streak {

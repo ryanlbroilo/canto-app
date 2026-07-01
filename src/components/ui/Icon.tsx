@@ -19,6 +19,14 @@ type IconName =
   | 'lungs'
   | 'send'
   | 'lock'
+  | 'trophy'
+  | 'medal'
+  | 'star'
+  | 'bolt'
+  | 'music'
+  | 'route'
+  | 'crown'
+  | 'bridge'
 
 const PATHS: Record<IconName, JSX.Element> = {
   home: <path d="M3 10.5 12 3l9 7.5M5 9v11h5v-6h4v6h5V9" />,
@@ -67,6 +75,42 @@ const PATHS: Record<IconName, JSX.Element> = {
     <>
       <rect x="5" y="11" width="14" height="9" rx="2" />
       <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+    </>
+  ),
+  trophy: (
+    <>
+      <path d="M7 4h10v5a5 5 0 0 1-10 0z" />
+      <path d="M7 5H4v2a3 3 0 0 0 3 3M17 5h3v2a3 3 0 0 1-3 3M10 15h4M9 20h6M12 15v5" />
+    </>
+  ),
+  medal: (
+    <>
+      <path d="M8 3 6 9M16 3l2 6M9 3h6" />
+      <circle cx="12" cy="15" r="5" />
+      <path d="M12 13v4M10.5 15h3" />
+    </>
+  ),
+  star: <path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z" />,
+  bolt: <path d="M13 2 4 14h7l-1 8 9-12h-7z" />,
+  music: (
+    <>
+      <path d="M9 18V5l11-2v13" />
+      <circle cx="6" cy="18" r="3" />
+      <circle cx="17" cy="16" r="3" />
+    </>
+  ),
+  route: (
+    <>
+      <circle cx="6" cy="19" r="2.5" />
+      <circle cx="18" cy="5" r="2.5" />
+      <path d="M9 19h6a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h6" />
+    </>
+  ),
+  crown: <path d="M4 8l3 9h10l3-9-5 4-3-6-3 6z" />,
+  bridge: (
+    <>
+      <path d="M3 8c4 0 6 3 9 3s5-3 9-3" />
+      <path d="M3 8v8M21 8v8M9 11v5M15 11v5M3 16h18" />
     </>
   ),
 }

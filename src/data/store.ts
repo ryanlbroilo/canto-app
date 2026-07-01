@@ -1,6 +1,7 @@
 // Store local (localStorage). Enquanto validamos, tudo fica no dispositivo.
 // Migra para a API do EVA Hub depois, mantendo a mesma forma.
-import { Profile, Settings, SessionRecord, Streak, VocalBaseline } from './types'
+import { GamificationState, Profile, Settings, SessionRecord, Streak, VocalBaseline } from './types'
+import { computeGamification } from './gamification'
 
 const K = {
   profile: 'canto.profile.v1',
@@ -9,6 +10,13 @@ const K = {
   rangeHistory: 'canto.rangeHistory.v1',
   sessions: 'canto.sessions.v1',
   seenOnboarding: 'canto.seenOnboarding.v1',
+  achievements: 'canto.achievements.v1',
+}
+
+/** Conquista desbloqueada, com o momento em que caiu (para "novo!" na UI). */
+export interface UnlockedAchievement {
+  id: string
+  at: string
 }
 
 function read<T>(key: string, fallback: T): T {
@@ -99,6 +107,44 @@ function shiftDay(day: string, delta: number): string {
   const d = new Date(day + 'T00:00:00')
   d.setDate(d.getDate() + delta)
   return d.toISOString().slice(0, 10)
+}
+
+// ---------- Conquistas desbloqueadas ----------
+export const getUnlockedAchievements = (): UnlockedAchievement[] =>
+  read<UnlockedAchievement[]>(K.achievements, [])
+
+/**
+ * Concilia o conjunto de conquistas elegíveis com o que já está gravado:
+ * grava as NOVAS com timestamp (preservando a data das antigas) e devolve a
+ * lista completa e ordenada. Não remove conquistas já ganhas.
+ */
+export function reconcileAchievements(eligibleIds: string[]): UnlockedAchievement[] {
+  const stored = getUnlockedAchievements()
+  const known = new Set(stored.map((a) => a.id))
+  const now = new Date().toISOString()
+  let changed = false
+  for (const id of eligibleIds) {
+    if (!known.has(id)) {
+      stored.push({ id, at: now })
+      known.add(id)
+      changed = true
+    }
+  }
+  if (changed) write(K.achievements, stored)
+  return stored
+}
+
+// ---------- Gamificação (agregado, recomputável das sessões) ----------
+export function getGamification(): GamificationState {
+  const state = computeGamification({
+    sessions: getSessions(),
+    streak: getStreak(),
+    baseline: getBaseline(),
+    rangeHistory: getRangeHistory(),
+  })
+  // grava as conquistas recém-desbloqueadas e usa a lista final (persistida)
+  const unlocked = reconcileAchievements(state.achievements)
+  return { ...state, achievements: unlocked.map((a) => a.id) }
 }
 
 // ---------- util ----------
