@@ -113,3 +113,40 @@ export function openingUserMessage(context: string): EvaMessage {
     content: `[DADOS_DO_ALUNO]\n${context}\n[/DADOS_DO_ALUNO]\n\nAnalise minha última sessão (se houver dados) e me dê o próximo passo. Seja breve, caloroso e direto.`,
   }
 }
+
+/** Intenções que o aluno pode escolher no seletor antes de falar com a EVA. */
+export type EvaIntent = 'analisar' | 'musica' | 'plano' | 'duvida' | 'fraqueza'
+
+/**
+ * Monta a mensagem-primer do usuário (role:'user') específica de cada intenção,
+ * sempre embutindo o bloco [DADOS_DO_ALUNO]. `extra` é usado por 'musica' (nome
+ * da música) e 'duvida' (a pergunta digitada). Nada é chamado até isto ser usado.
+ */
+export function intentMessage(intent: EvaIntent, context: string, extra?: string): EvaMessage {
+  const bloco = `[DADOS_DO_ALUNO]\n${context}\n[/DADOS_DO_ALUNO]`
+  switch (intent) {
+    case 'analisar':
+      // Equivalente ao opener atual — delega pra manter um único texto de verdade.
+      return openingUserMessage(context)
+    case 'musica':
+      return {
+        role: 'user',
+        content: `${bloco}\n\nQuero aprender a cantar "${extra ?? ''}". Com base no meu range/tipo vocal, me diga tom sugerido, trechos que vão exigir da minha passagem/agudos e um plano de estudo.`,
+      }
+    case 'plano':
+      return {
+        role: 'user',
+        content: `${bloco}\n\nMonte um plano de treino pra mim pros próximos dias, baseado no meu perfil e última sessão.`,
+      }
+    case 'duvida':
+      return {
+        role: 'user',
+        content: `${bloco}\n\n${extra ?? ''}`,
+      }
+    case 'fraqueza':
+      return {
+        role: 'user',
+        content: `${bloco}\n\nQual é o meu ponto mais fraco agora e como eu ataco isso? Use os dados da minha última sessão.`,
+      }
+  }
+}

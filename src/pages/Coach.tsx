@@ -2,15 +2,35 @@ import { useEffect, useRef, useState } from 'react'
 import { useApp } from '../app/AppContext'
 import { Icon } from '../components/ui/Icon'
 import { Markdown } from '../components/ui/Markdown'
-import { SessionRecord } from '../data/types'
-import { askEvaStream, buildStudentContext, openingUserMessage, EvaMessage } from '../data/eva'
+import { Profile, VocalBaseline, SessionRecord, FeatureReport } from '../data/types'
+import { askEvaStream, buildStudentContext, intentMessage, EvaIntent, EvaMessage } from '../data/eva'
 
 interface Msg {
   from: 'eva' | 'me'
   text: string
 }
 
-const SUGGESTIONS = ['Analise minha última sessão', 'Como solto os agudos?', 'Por que minha voz quebra?', 'Um exercício de respiração']
+// ---------- Sugestões dinâmicas (chips) ----------
+// Antes eram hardcoded; agora derivam do perfil + baseline + última sessão.
+function generateSuggestions(profile: Profile, baseline: VocalBaseline | null, lastReport?: FeatureReport): string[] {
+  const chips: string[] = []
+  if (!lastReport) {
+    chips.push('Começar pelo aquecimento')
+  } else {
+    if (lastReport.performance.notesHitPct < 50) chips.push('Exercício de afinação')
+    if (lastReport.performance.events.some((e) => e.type === 'register_break')) chips.push('Trabalhar passaggio')
+  }
+  // Sempre um chip de técnica pro tipo vocal (fallback pro objetivo/genérico).
+  const voice = baseline?.voiceType || profile.goal || 'minha voz'
+  chips.push(`Técnica pro ${voice}`)
+  // Garante 3-4 chips mesmo quando os condicionais não disparam.
+  const extras = ['Como solto os agudos?', 'Um exercício de respiração', 'Por que minha voz quebra?']
+  for (const e of extras) {
+    if (chips.length >= 4) break
+    if (!chips.includes(e)) chips.push(e)
+  }
+  return chips.slice(0, 4)
+}
 
 // ---------- Fallback local (prévia rule-based, grounded no feature-JSON) ----------
 function topRegister(rt: { peito: number; mix: number; cabeca: number; falsete: number }): string | null {
@@ -71,6 +91,34 @@ function replyLocal(input: string, last: SessionRecord | undefined): string {
   return 'Escolhe um foco — agudos, afinação, respiração ou transição de registro — que eu te oriento com base no que o seu DSP mediu.'
 }
 
+// Resposta de fallback (evaLive=false) coerente com a intenção escolhida:
+// 'analisar'/'plano'/'fraqueza' → panorama da sessão (firstMessage);
+// 'musica'/'duvida' → resposta rule-based do texto digitado (replyLocal).
+function localReplyForIntent(intent: EvaIntent, extra: string, last: SessionRecord | undefined, name: string): string {
+  if (intent === 'musica' || intent === 'duvida') return replyLocal(extra, last)
+  return firstMessage(last, name)
+}
+
+// ---------- Definição visual dos cards do seletor ----------
+interface IntentCard {
+  intent: EvaIntent
+  icon: 'chart' | 'wave' | 'target' | 'spark' | 'flame'
+  title: string
+  sub: string
+  needsReport?: boolean // desabilita/rotula "treine primeiro" sem lastReport
+  asksText?: boolean // pede texto extra (música/dúvida) antes da 1ª chamada
+  echo: string // bolha "me" mostrada ao iniciar (intenções sem texto extra)
+  placeholder?: string // rótulo do composer quando asksText
+}
+
+const INTENT_CARDS: IntentCard[] = [
+  { intent: 'analisar', icon: 'chart', title: 'Analisar minha última sessão', sub: 'Panorama da afinação e o próximo passo.', needsReport: true, echo: 'Analisar minha última sessão' },
+  { intent: 'musica', icon: 'wave', title: 'Aprender uma música', sub: 'Tom sugerido, trechos difíceis e um plano.', asksText: true, echo: '', placeholder: 'Qual música você quer aprender?' },
+  { intent: 'plano', icon: 'target', title: 'Montar meu plano', sub: 'Um roteiro de treino pros próximos dias.', echo: 'Montar meu plano de treino' },
+  { intent: 'duvida', icon: 'spark', title: 'Tirar uma dúvida', sub: 'Pergunte qualquer coisa sobre técnica.', asksText: true, echo: '', placeholder: 'Qual sua dúvida?' },
+  { intent: 'fraqueza', icon: 'flame', title: 'Meu ponto fraco', sub: 'O que atacar agora, com base nos dados.', needsReport: true, echo: 'Qual é o meu ponto mais fraco?' },
+]
+
 // ---------- Página ----------
 export default function Coach() {
   const { profile, baseline, sessions } = useApp()
@@ -80,14 +128,22 @@ export default function Coach() {
   const [msgs, setMsgs] = useState<Msg[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [evaLive, setEvaLive] = useState<boolean | null>(null) // null=conectando
+  const [evaLive, setEvaLive] = useState<boolean | null>(null) // null=conectando (só após escolher)
+  const [started, setStarted] = useState(false) // false = mostra o seletor de intenção
+  const [intent, setIntent] = useState<EvaIntent | null>(null) // intenção que aguarda texto extra
   const scrollRef = useRef<HTMLDivElement>(null)
   const taRef = useRef<HTMLTextAreaElement>(null)
 
   const contextRef = useRef(buildStudentContext(profile, baseline, lastReport))
   const historyRef = useRef<EvaMessage[]>([])
-  const bootRef = useRef(false)
   const streamingRef = useRef(false)
+
+  const suggestions = useRef(generateSuggestions(profile, baseline, lastReport)).current
+
+  // Auto-scroll pro fim a cada mensagem/typing (só existe depois que a conversa começa).
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
+  }, [msgs, loading])
 
   // Recebe o texto acumulado: no 1º token cria a bolha (e some o "digitando"),
   // depois vai atualizando a última bolha da EVA.
@@ -105,31 +161,59 @@ export default function Coach() {
     }
   }
 
-  useEffect(() => {
-    if (bootRef.current) return
-    bootRef.current = true
-    ;(async () => {
-      const opener = openingUserMessage(contextRef.current)
-      setLoading(true)
-      streamingRef.current = false
-      try {
-        const reply = await askEvaStream([opener], onPartial)
-        historyRef.current = [opener, { role: 'assistant', content: reply }]
-        setEvaLive(true)
-      } catch {
-        setMsgs([{ from: 'eva', text: firstMessage(last, profile.name) }])
-        setEvaLive(false)
-      } finally {
-        setLoading(false)
-        streamingRef.current = false
+  // Caminho único de streaming: recebe o histórico já montado (incl. a mensagem
+  // do usuário) e o texto usado no fallback rule-based. Preserva evaLive/historyRef.
+  // `firstReplyLocal` é a resposta local quando a EVA nem conecta na 1ª chamada.
+  async function streamTurn(hist: EvaMessage[], fallbackText: string, firstReplyLocal?: string) {
+    setLoading(true)
+    streamingRef.current = false
+    try {
+      const reply = await askEvaStream(hist, onPartial)
+      historyRef.current = [...hist, { role: 'assistant', content: reply }]
+      setEvaLive(true)
+    } catch {
+      // Se já tinha começado a streamar, sobrescreve a bolha parcial pelo fallback.
+      const text = firstReplyLocal ?? replyLocal(fallbackText, last)
+      if (streamingRef.current) {
+        setMsgs((m) => {
+          const c = [...m]
+          c[c.length - 1] = { from: 'eva', text }
+          return c
+        })
+      } else {
+        setMsgs((m) => [...m, { from: 'eva', text }])
       }
-    })()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+      // Só rebaixa pra "prévia" na 1ª chamada (quando ainda não sabíamos o status).
+      if (firstReplyLocal !== undefined) setEvaLive(false)
+    } finally {
+      setLoading(false)
+      streamingRef.current = false
+    }
+  }
 
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
-  }, [msgs, loading])
+  // Primeira chamada: dispara a conversa a partir da intenção escolhida.
+  // NENHUM token é gasto antes daqui — só ao clicar/enviar no seletor.
+  function startConversation(firstMsg: EvaMessage, echoText: string, chosen: EvaIntent, extra: string) {
+    setStarted(true)
+    setIntent(null)
+    if (echoText) setMsgs([{ from: 'me', text: echoText }])
+    const firstLocal = localReplyForIntent(chosen, extra, last, profile.name)
+    void streamTurn([firstMsg], extra, firstLocal)
+  }
+
+  // Clique num card do seletor.
+  function chooseIntent(card: IntentCard) {
+    if (card.needsReport && !lastReport) return // desabilitado — treine primeiro
+    if (card.asksText) {
+      // Precisa de texto: revela o composer focado com placeholder específico.
+      setIntent(card.intent)
+      setStarted(true)
+      requestAnimationFrame(() => taRef.current?.focus())
+      return
+    }
+    const msg = intentMessage(card.intent, contextRef.current)
+    startConversation(msg, card.echo, card.intent, '')
+  }
 
   function growTextarea() {
     const el = taRef.current
@@ -143,31 +227,22 @@ export default function Coach() {
     if (!t || loading) return
     setInput('')
     requestAnimationFrame(growTextarea)
-    setMsgs((m) => [...m, { from: 'me', text: t }])
 
+    // 1ª mensagem de uma intenção que pedia texto extra (música/dúvida).
+    if (intent && msgs.length === 0) {
+      const chosen = intent
+      const firstMsg = intentMessage(chosen, contextRef.current, t)
+      startConversation(firstMsg, t, chosen, t)
+      return
+    }
+
+    // Mensagens seguintes: reutilizam o mesmo caminho de streaming.
+    setMsgs((m) => [...m, { from: 'me', text: t }])
     if (evaLive) {
-      const userMsg: EvaMessage = { role: 'user', content: t }
-      const hist = [...historyRef.current, userMsg]
-      setLoading(true)
-      streamingRef.current = false
-      try {
-        const reply = await askEvaStream(hist, onPartial)
-        historyRef.current = [...hist, { role: 'assistant', content: reply }]
-      } catch {
-        if (streamingRef.current) {
-          setMsgs((m) => {
-            const c = [...m]
-            c[c.length - 1] = { from: 'eva', text: replyLocal(t, last) }
-            return c
-          })
-        } else {
-          setMsgs((m) => [...m, { from: 'eva', text: replyLocal(t, last) }])
-        }
-      } finally {
-        setLoading(false)
-        streamingRef.current = false
-      }
+      const hist = [...historyRef.current, { role: 'user', content: t } as EvaMessage]
+      void streamTurn(hist, t) // sem firstReplyLocal → mantém evaLive
     } else {
+      // Modo prévia: resposta local com um pequeno atraso pra parecer natural.
       setLoading(true)
       setTimeout(() => {
         setMsgs((m) => [...m, { from: 'eva', text: replyLocal(t, last) }])
@@ -176,7 +251,12 @@ export default function Coach() {
     }
   }
 
-  const showChips = msgs.length <= 1 && !loading && evaLive !== null
+  // Chips aparecem só depois de a conversa começar, na abertura, e com EVA ao vivo.
+  const showChips = started && msgs.length <= 1 && !loading && evaLive === true
+
+  // Placeholder do composer muda quando estamos aguardando texto de uma intenção.
+  const activeCard = intent ? INTENT_CARDS.find((c) => c.intent === intent) : null
+  const composerPlaceholder = activeCard?.placeholder ?? 'Pergunte sobre afinação, agudos, respiração, registros…'
 
   const badge =
     evaLive === true
@@ -201,75 +281,117 @@ export default function Coach() {
             </p>
           </div>
         </div>
-        <span className={badge.cls}>
-          <Icon name={badge.icon} size={13} /> {badge.label}
-        </span>
+        {started && (
+          <span className={badge.cls}>
+            <Icon name={badge.icon} size={13} /> {badge.label}
+          </span>
+        )}
       </div>
 
-      <div className="card card--glow chat reveal r0">
-        <div className="chat-scroll" ref={scrollRef}>
-          {msgs.map((m, i) => (
-            <div key={i} className={`msg msg--${m.from} reveal`}>
-              {m.from === 'eva' && (
+      {/* Antes de escolher a intenção não falamos com a IA — só o seletor. */}
+      {!started ? (
+        <div className="card card--glow intent-panel reveal r0">
+          <div className="intent-head">
+            <h2 className="intent-title">Com o que a EVA te ajuda hoje?</h2>
+            <p className="intent-sub">Escolha um foco — só aí a EVA começa a conversar com você.</p>
+          </div>
+          <div className="intent-grid">
+            {INTENT_CARDS.map((card) => {
+              const locked = !!card.needsReport && !lastReport
+              return (
+                <button key={card.intent} className={`intent-card${locked ? ' intent-card--locked' : ''}`} onClick={() => chooseIntent(card)} disabled={locked}>
+                  <span className="intent-card-icon">
+                    <Icon name={locked ? 'lock' : card.icon} size={20} />
+                  </span>
+                  <span className="intent-card-body">
+                    <span className="intent-card-title">{card.title}</span>
+                    <span className="intent-card-sub">{locked ? 'Treine primeiro para desbloquear' : card.sub}</span>
+                  </span>
+                  {!locked && (
+                    <span className="intent-card-arrow">
+                      <Icon name="chevron" size={16} />
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      ) : (
+        <div className="card card--glow chat reveal r0">
+          <div className="chat-scroll" ref={scrollRef}>
+            {msgs.map((m, i) => (
+              <div key={i} className={`msg msg--${m.from} reveal`}>
+                {m.from === 'eva' && (
+                  <span className="eva-avatar msg-av">
+                    <Icon name="spark" size={15} />
+                  </span>
+                )}
+                <div className="msg-bubble">{m.from === 'eva' ? <Markdown>{m.text}</Markdown> : m.text}</div>
+              </div>
+            ))}
+            {loading && (
+              <div className="msg msg--eva reveal">
                 <span className="eva-avatar msg-av">
                   <Icon name="spark" size={15} />
                 </span>
-              )}
-              <div className="msg-bubble">{m.from === 'eva' ? <Markdown>{m.text}</Markdown> : m.text}</div>
-            </div>
-          ))}
-          {loading && (
-            <div className="msg msg--eva reveal">
-              <span className="eva-avatar msg-av">
-                <Icon name="spark" size={15} />
-              </span>
-              <div className="msg-bubble typing">
-                <span />
-                <span />
-                <span />
+                <div className="msg-bubble typing">
+                  <span />
+                  <span />
+                  <span />
+                </div>
               </div>
+            )}
+          </div>
+
+          {/* Composer aguardando texto de uma intenção (música/dúvida). */}
+          {activeCard && msgs.length === 0 && (
+            <div className="intent-prompt">
+              <Icon name={activeCard.icon} size={14} /> {activeCard.placeholder}
             </div>
           )}
-        </div>
 
-        {showChips && (
-          <div className="chip-row">
-            {SUGGESTIONS.map((s) => (
-              <button key={s} className="chip" onClick={() => sendText(s)}>
-                {s}
-              </button>
-            ))}
+          {showChips && (
+            <div className="chip-row">
+              {suggestions.map((s) => (
+                <button key={s} className="chip" onClick={() => sendText(s)}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="chat-input">
+            <textarea
+              ref={taRef}
+              className="chat-textarea"
+              rows={1}
+              placeholder={composerPlaceholder}
+              value={input}
+              onChange={(e) => {
+                setInput(e.target.value)
+                growTextarea()
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault()
+                  sendText(input)
+                }
+              }}
+            />
+            <button className="btn btn--primary btn--icon chat-send" onClick={() => sendText(input)} aria-label="Enviar" disabled={loading || !input.trim()}>
+              <Icon name="send" />
+            </button>
           </div>
-        )}
-
-        <div className="chat-input">
-          <textarea
-            ref={taRef}
-            className="chat-textarea"
-            rows={1}
-            placeholder="Pergunte sobre afinação, agudos, respiração, registros…"
-            value={input}
-            onChange={(e) => {
-              setInput(e.target.value)
-              growTextarea()
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault()
-                sendText(input)
-              }
-            }}
-          />
-          <button className="btn btn--primary btn--icon chat-send" onClick={() => sendText(input)} aria-label="Enviar" disabled={loading || !input.trim()}>
-            <Icon name="send" />
-          </button>
         </div>
-      </div>
+      )}
 
       <p className="hint" style={{ marginTop: 12 }}>
-        {evaLive
-          ? 'EVA conectada ao EVA Hub. Recebe só as features numéricas do seu DSP — nunca o áudio — e faz o coaching real.'
-          : 'Prévia com respostas locais. Configure a EVA (docs/eva-setup.md) para o coaching real via EVA Hub, mantendo sua voz no dispositivo.'}
+        {!started
+          ? 'Nada é enviado à EVA até você escolher acima — sua voz fica no dispositivo e só as features numéricas do DSP viajam.'
+          : evaLive
+            ? 'EVA conectada ao EVA Hub. Recebe só as features numéricas do seu DSP — nunca o áudio — e faz o coaching real.'
+            : 'Prévia com respostas locais. Configure a EVA (docs/eva-setup.md) para o coaching real via EVA Hub, mantendo sua voz no dispositivo.'}
       </p>
     </div>
   )
