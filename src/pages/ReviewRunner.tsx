@@ -4,24 +4,33 @@ import { useApp } from '../app/AppContext'
 import { getExercise } from '../data/exercises'
 import { getUnit } from '../data/curriculum'
 import { unitReviewQueue, spacedReviewQueue } from '../data/review'
+import { warmupQueue, cooldownQueue } from '../data/vocalHealth'
 import { addSession, markReviewDone, newId } from '../data/store'
 import { FeatureReport } from '../data/types'
 import { ExerciseRunner } from './ExercisePlayer'
-import { Icon } from '../components/ui/Icon'
+import { Icon, IconName } from '../components/ui/Icon'
 
-// Review runner: roda uma FILA de exercícios em sequência (o "review runner"
-// genérico). Duas entradas: revisão de UNIDADE (troféu) e revisão ESPAÇADA.
-export default function ReviewRunner({ mode }: { mode: 'unit' | 'spaced' }) {
+export type RunnerMode = 'unit' | 'spaced' | 'warmup' | 'cooldown'
+
+// Runner genérico de FILA de exercícios: revisões (unidade/espaçada) e rotinas
+// de saúde vocal (aquecimento/desaquecimento). Reusa o ExerciseRunner.
+export default function ReviewRunner({ mode }: { mode: RunnerMode }) {
   const { unitId } = useParams()
   const { engine, baseline, gamification, sessions, reload } = useApp()
   const navigate = useNavigate()
   const done = gamification.exercisesDone
 
   const unit = mode === 'unit' && unitId ? getUnit(unitId) : undefined
+  const isRoutine = mode === 'warmup' || mode === 'cooldown'
+  const backTo = isRoutine ? '/saude' : '/exercicios'
 
   // Fila FIXADA na montagem — não re-embaralha conforme as pontuações mudam.
   const queue = useMemo(() => {
-    const ids = mode === 'unit' ? (unit ? unitReviewQueue(unit, done) : []) : spacedReviewQueue(sessions, done)
+    const ids =
+      mode === 'unit' ? (unit ? unitReviewQueue(unit, done) : [])
+      : mode === 'spaced' ? spacedReviewQueue(sessions, done)
+      : mode === 'warmup' ? warmupQueue()
+      : cooldownQueue()
     return ids.map((id) => getExercise(id)).filter((e): e is NonNullable<typeof e> => Boolean(e))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -30,7 +39,13 @@ export default function ReviewRunner({ mode }: { mode: 'unit' | 'spaced' }) {
   const [phase, setPhase] = useState<'run' | 'done'>('run')
   const scores = useRef<number[]>([])
 
-  const title = mode === 'unit' ? `Revisão · ${unit?.title ?? ''}` : 'Revisão do dia'
+  const CFG: Record<RunnerMode, { title: string; badge: string; badgeIcon: IconName; doneTitle: string; doneMsg: string; doneIcon: IconName }> = {
+    unit: { title: `Revisão · ${unit?.title ?? ''}`, badge: 'revisão', badgeIcon: 'trophy', doneTitle: 'Revisão concluída', doneMsg: 'Troféu da unidade conquistado! Revisar o que você já viu fixa a técnica de verdade.', doneIcon: 'trophy' },
+    spaced: { title: 'Revisão do dia', badge: 'revisão', badgeIcon: 'trophy', doneTitle: 'Revisão concluída', doneMsg: 'Revisão do dia feita! Voltar ao que aprendeu antes é o segredo da retenção.', doneIcon: 'trophy' },
+    warmup: { title: 'Aquecimento vocal', badge: 'aquecimento', badgeIcon: 'lungs', doneTitle: 'Voz aquecida', doneMsg: 'Prontinho — laringe solta e ar fluindo. Agora sua voz está pronta pra cantar com segurança.', doneIcon: 'check' },
+    cooldown: { title: 'Desaquecimento', badge: 'desaquecimento', badgeIcon: 'lungs', doneTitle: 'Voz relaxada', doneMsg: 'Desaquecida. Desaquecer depois de cantar tira a tensão e cuida das suas pregas vocais. Bom descanso.', doneIcon: 'check' },
+  }
+  const cfg = CFG[mode]
   const ex = queue[i]
 
   function itemFinish(hit: number, dev: number, sec: number, report?: FeatureReport) {
@@ -61,14 +76,14 @@ export default function ReviewRunner({ mode }: { mode: 'unit' | 'spaced' }) {
     setI((n) => n + 1)
   }
 
-  // ---- Nada para revisar ----
+  // ---- Nada na fila ----
   if (queue.length === 0) {
     return (
       <div className="page">
         <div className="page-head">
           <div>
-            <Link to="/exercicios" className="btn btn--sm btn--ghost" style={{ marginBottom: 10 }}>← Exercícios</Link>
-            <h1 className="page-title">{title}</h1>
+            <Link to={backTo} className="btn btn--sm btn--ghost" style={{ marginBottom: 10 }}>← Voltar</Link>
+            <h1 className="page-title">{cfg.title}</h1>
           </div>
         </div>
         <div className="card cat-empty">
@@ -76,7 +91,9 @@ export default function ReviewRunner({ mode }: { mode: 'unit' | 'spaced' }) {
           <p>
             {mode === 'spaced'
               ? 'Ainda não há o que revisar. Pratique alguns exercícios — a revisão espaçada traz de volta o que você aprendeu em dias anteriores.'
-              : 'Esta unidade ainda não tem exercícios para revisar.'}
+              : isRoutine
+                ? 'Não consegui montar a rotina agora. Tente pelos exercícios.'
+                : 'Esta unidade ainda não tem exercícios para revisar.'}
           </p>
         </div>
       </div>
@@ -90,26 +107,24 @@ export default function ReviewRunner({ mode }: { mode: 'unit' | 'spaced' }) {
       <div className="page">
         <div className="page-head">
           <div>
-            <h1 className="page-title">Revisão concluída</h1>
-            <p className="page-sub">{title}</p>
+            <h1 className="page-title">{cfg.doneTitle}</h1>
+            <p className="page-sub">{cfg.title}</p>
           </div>
         </div>
         <div className="card card--glow">
           <div className="player">
             <div className="eva-avatar" style={{ width: 64, height: 64 }}>
-              <Icon name="trophy" size={30} />
+              <Icon name={cfg.doneIcon} size={30} />
             </div>
-            <div className="score-big">{avg}%</div>
-            <p className="hint center" style={{ maxWidth: '42ch' }}>
-              {mode === 'unit'
-                ? 'Troféu da unidade conquistado! Revisar o que você já viu fixa a técnica de verdade.'
-                : 'Revisão do dia feita! Voltar ao que aprendeu antes é o segredo da retenção de longo prazo.'}
-            </p>
+            {!isRoutine && <div className="score-big">{avg}%</div>}
+            <p className="hint center" style={{ maxWidth: '42ch' }}>{cfg.doneMsg}</p>
             <div className="controls" style={{ justifyContent: 'center' }}>
-              <button className="btn btn--primary" onClick={() => navigate('/exercicios')}>
-                <Icon name="route" /> Voltar ao caminho
+              <button className="btn btn--primary" onClick={() => navigate(isRoutine ? '/exercicios' : '/exercicios')}>
+                <Icon name="route" /> {isRoutine ? 'Ir cantar' : 'Voltar ao caminho'}
               </button>
-              <button className="btn" onClick={() => navigate('/progresso')}>Ver progresso</button>
+              <button className="btn" onClick={() => navigate(isRoutine ? '/saude' : '/progresso')}>
+                {isRoutine ? 'Saúde vocal' : 'Ver progresso'}
+              </button>
             </div>
           </div>
         </div>
@@ -122,16 +137,15 @@ export default function ReviewRunner({ mode }: { mode: 'unit' | 'spaced' }) {
     <div className="page">
       <div className="page-head">
         <div>
-          <Link to="/exercicios" className="btn btn--sm btn--ghost" style={{ marginBottom: 10 }}>← Exercícios</Link>
-          <h1 className="page-title">{title}</h1>
-          <p className="page-sub">Exercício {i + 1} de {queue.length} · {ex.name}</p>
+          <Link to={backTo} className="btn btn--sm btn--ghost" style={{ marginBottom: 10 }}>← Voltar</Link>
+          <h1 className="page-title">{cfg.title}</h1>
+          <p className="page-sub">{isRoutine ? 'Passo' : 'Exercício'} {i + 1} de {queue.length} · {ex.name}</p>
         </div>
         <span className="badge badge--gold">
-          <Icon name="trophy" size={13} /> revisão
+          <Icon name={cfg.badgeIcon} size={13} /> {cfg.badge}
         </span>
       </div>
 
-      {/* trilha de progresso da fila */}
       <div className="rev-track" aria-hidden="true">
         {queue.map((q, qi) => (
           <span key={q.id} className="rev-dot" data-state={qi < i ? 'done' : qi === i ? 'now' : 'todo'} />
@@ -145,7 +159,7 @@ export default function ReviewRunner({ mode }: { mode: 'unit' | 'spaced' }) {
           engine={engine}
           baseline={baseline}
           onFinish={itemFinish}
-          onExit={() => navigate('/exercicios')}
+          onExit={() => navigate(backTo)}
           review={{ index: i, total: queue.length, onNext: next }}
         />
       </div>
