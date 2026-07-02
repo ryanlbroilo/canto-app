@@ -1,20 +1,31 @@
-// Serviço cliente da EVA (via proxy same-origin /api/eva/chat, que guarda a chave).
+// Serviço cliente da EVA — chama o backend NestJS (/api/eva/chat), que guarda a
+// chave do EVA Hub (server-side, nunca no bundle) e é autenticado + rate-limited.
 // A EVA recebe SÓ os números do DSP (feature-JSON) — nunca áudio.
 import { Profile, VocalBaseline, FeatureReport } from './types'
 import { midiLabel } from '../audio/notes'
+import { API_URL, authHeaders, tryRefresh } from './api'
 
 export interface EvaMessage {
   role: 'user' | 'assistant'
   content: string
 }
 
+/** POST /eva/chat no backend com Bearer; em 401 tenta refresh UMA vez e repete. */
+async function evaFetch(body: unknown): Promise<Response> {
+  const send = (): Promise<Response> =>
+    fetch(`${API_URL}/eva/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(body),
+    })
+  let res = await send()
+  if (res.status === 401 && (await tryRefresh())) res = await send()
+  return res
+}
+
 /** Chama a persona EVA (sem streaming). Lança erro se não configurada / falha. */
 export async function askEva(messages: EvaMessage[]): Promise<string> {
-  const res = await fetch('/api/eva/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages, stream: false }),
-  })
+  const res = await evaFetch({ messages, stream: false })
   if (!res.ok) {
     const t = await res.text().catch(() => '')
     throw new Error(`EVA ${res.status}: ${t.slice(0, 200)}`)
@@ -30,11 +41,7 @@ export async function askEva(messages: EvaMessage[]): Promise<string> {
  * pedaço; resolve com o texto final. Lança se não configurada / falha / vazio.
  */
 export async function askEvaStream(messages: EvaMessage[], onDelta: (full: string) => void): Promise<string> {
-  const res = await fetch('/api/eva/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages, stream: true }),
-  })
+  const res = await evaFetch({ messages, stream: true })
   if (!res.ok || !res.body) {
     const t = await res.text().catch(() => '')
     throw new Error(`EVA ${res.status}: ${t.slice(0, 200)}`)

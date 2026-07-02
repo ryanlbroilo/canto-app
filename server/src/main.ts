@@ -1,18 +1,28 @@
 import { Logger, ValidationPipe } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { NestFactory } from '@nestjs/core'
+import helmet from 'helmet'
 import { AppModule } from './app.module'
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter'
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, { logger: ['error', 'warn', 'log'] })
   const config = app.get(ConfigService)
 
+  // Segurança de cabeçalhos. API é JSON puro — sem CSP/COEP (isso é do front).
+  app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }))
+
   app.setGlobalPrefix('api')
   app.useGlobalPipes(
     new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
   )
+  app.useGlobalFilters(new AllExceptionsFilter())
+
+  // CORS por origem: '*' (dev) reflete a origem do request; em produção aceita
+  // uma lista separada por vírgula em CORS_ORIGIN.
+  const corsOrigin = config.get<string>('CORS_ORIGIN', '*')
   app.enableCors({
-    origin: config.get<string>('CORS_ORIGIN', '*'),
+    origin: corsOrigin === '*' ? true : corsOrigin.split(',').map((o) => o.trim()),
     credentials: true,
   })
   app.enableShutdownHooks()

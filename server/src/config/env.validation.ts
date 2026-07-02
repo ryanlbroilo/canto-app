@@ -13,4 +13,9 @@ export const envValidationSchema = Joi.object({
   JWT_ACCESS_TTL: Joi.string().default('15m'),
   JWT_REFRESH_TTL_DAYS: Joi.number().default(7),
   CORS_ORIGIN: Joi.string().default('*'),
+  // EVA Hub (coach de IA) — OPCIONAIS: sem elas o /api/eva/chat responde 501 e o
+  // Coach usa a prévia rule-based. A chave fica SÓ no servidor, nunca no bundle.
+  EVA_HUB_KEY: Joi.string().allow('').optional(),
+  EVA_ASSISTANT_ID: Joi.string().allow('').optional(),
+  EVA_HUB_URL: Joi.string().uri().default('https://evahub.com.br/api/v1/chat'),
 })

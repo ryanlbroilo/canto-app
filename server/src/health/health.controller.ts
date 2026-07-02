@@ -1,10 +1,12 @@
 import { Controller, Get, Inject, ServiceUnavailableException } from '@nestjs/common'
+import { SkipThrottle } from '@nestjs/throttler'
 import Redis from 'ioredis'
 import { Public } from '../common/decorators/public.decorator'
 import { PrismaService } from '../prisma/prisma.service'
 import { REDIS_CLIENT } from '../redis/redis.module'
 
 @Public()
+@SkipThrottle()
 @Controller('health')
 export class HealthController {
   constructor(

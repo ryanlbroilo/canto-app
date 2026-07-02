@@ -1,7 +1,7 @@
 // Cliente HTTP do backend do Canto: Bearer + refresh automático em 401.
 // O token fica no localStorage; a chave da EVA continua SÓ no proxy (server-side).
 
-const API_URL = ((import.meta as unknown as { env: Record<string, string> }).env?.VITE_API_URL as string) || 'http://localhost:3333/api'
+export const API_URL = ((import.meta as unknown as { env: Record<string, string> }).env?.VITE_API_URL as string) || 'http://localhost:3333/api'
 const AUTH_KEY = 'canto.auth.v1'
 
 export interface AuthUserInfo {
@@ -63,7 +63,11 @@ function saveAuth(a: StoredAuth | null): void {
 export const currentUser = (): AuthUserInfo | null => memAuth?.user ?? null
 export const isAuthed = (): boolean => !!memAuth
 
-async function tryRefresh(): Promise<boolean> {
+/** Cabeçalho Authorization atual (para chamadas fora do helper `api`, ex.: EVA/SSE). */
+export const authHeaders = (): Record<string, string> =>
+  memAuth ? { Authorization: `Bearer ${memAuth.tokens.accessToken}` } : {}
+
+export async function tryRefresh(): Promise<boolean> {
   if (!memAuth) return false
   try {
     const res = await fetch(`${API_URL}/auth/refresh`, {

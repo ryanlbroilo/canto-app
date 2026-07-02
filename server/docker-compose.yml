@@ -11,6 +11,11 @@ x-app-env: &app-env
   JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-15m}
   JWT_REFRESH_TTL_DAYS: ${JWT_REFRESH_TTL_DAYS:-7}
   CORS_ORIGIN: ${CORS_ORIGIN:-*}
+  # EVA Hub (coach de IA) — defina em server/.env (gitignored). Sem elas o
+  # /api/eva/chat responde 501 e o Coach usa a prévia rule-based.
+  EVA_HUB_KEY: ${EVA_HUB_KEY:-}
+  EVA_ASSISTANT_ID: ${EVA_ASSISTANT_ID:-}
+  EVA_HUB_URL: ${EVA_HUB_URL:-https://evahub.com.br/api/v1/chat}
 
 services:
   postgres:
