@@ -199,3 +199,14 @@ export interface Member {
   lastSessionAt: string | null
 }
 export const apiListMembers = (): Promise<Member[]> => api<Member[]>('/tenant/members')
+
+export interface MemberDetail {
+  id: string
+  name: string | null
+  email: string
+  role: string
+  createdAt: string
+  baseline: unknown | null
+  sessions: import('./types').SessionRecord[]
+}
+export const apiMemberDetail = (id: string): Promise<MemberDetail> => api<MemberDetail>(`/tenant/members/${id}`)

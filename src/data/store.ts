@@ -142,7 +142,11 @@ function dayKey(iso: string): string {
   return iso.slice(0, 10)
 }
 export function getStreak(): Streak {
-  const sessions = getSessions()
+  return computeStreak(getSessions())
+}
+
+/** Streak puro a partir de uma lista de sessões (reusado pro painel do líder). */
+export function computeStreak(sessions: { dateISO: string }[]): Streak {
   const days = Array.from(new Set(sessions.map((s) => dayKey(s.dateISO)))).sort()
   const { current, longest } = computeRuns(days)
   return { current, longest, total: sessions.length, days }

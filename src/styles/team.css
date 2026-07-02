@@ -109,3 +109,116 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
+
+/* linha de membro clicável */
+.member-row--btn {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--hairline);
+  cursor: pointer;
+  transition: background 120ms var(--ease);
+  border-radius: 10px;
+}
+.member-row--btn:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+.member-row--btn > svg {
+  color: var(--faint);
+}
+
+/* ---- detalhe do membro ---- */
+.member-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+@media (max-width: 560px) {
+  .member-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.ms-card {
+  background: linear-gradient(180deg, var(--panel-2, rgba(255, 255, 255, 0.04)), var(--panel, rgba(0, 0, 0, 0.1)));
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+  padding: 16px 14px;
+  text-align: center;
+}
+.ms-card b {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--gold-2);
+  line-height: 1;
+}
+.ms-card span {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 5px;
+  display: block;
+}
+
+.skill-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 20px;
+  margin-top: 14px;
+}
+@media (max-width: 560px) {
+  .skill-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.skill-top {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13.5px;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.skill-lv {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+.skill-bar {
+  height: 7px;
+  border-radius: var(--r-pill, 999px);
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+.skill-fill {
+  height: 100%;
+  border-radius: inherit;
+  transition: width 400ms var(--ease);
+}
+
+.sess-list {
+  display: flex;
+  flex-direction: column;
+  margin-top: 12px;
+}
+.sess-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 14px;
+  align-items: center;
+  padding: 11px 4px;
+  border-top: 1px solid var(--hairline);
+  font-size: 14px;
+}
+.sess-row:first-child {
+  border-top: 0;
+}
+.sess-row .mono {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+}
+.sess-label {
+  color: var(--text);
+}
