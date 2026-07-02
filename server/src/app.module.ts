@@ -10,6 +10,7 @@ import { PrismaModule } from './prisma/prisma.module'
 import { bullRootConfig } from './queue/bull-config'
 import { RedisModule } from './redis/redis.module'
 import { SessionsModule } from './sessions/sessions.module'
+import { StateModule } from './state/state.module'
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { SessionsModule } from './sessions/sessions.module'
     BullModule.forRootAsync(bullRootConfig),
     AuthModule,
     SessionsModule,
+    StateModule,
     HealthModule,
   ],
   providers: [

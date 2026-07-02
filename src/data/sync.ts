@@ -37,6 +37,35 @@ export function pushSessionToBackend(rec: SessionRecord): void {
   })
 }
 
+// ---------- Estado do usuário (perfil, range, settings, conquistas, onboarding) ----------
+export interface UserStatePayload {
+  profileName?: string
+  profileGoal?: string
+  settings?: Record<string, unknown>
+  baseline?: Record<string, unknown> | null
+  rangeHistory?: unknown[]
+  achievements?: unknown[]
+  seenOnboarding?: boolean
+}
+
+let statePushTimer: ReturnType<typeof setTimeout> | undefined
+
+/** Empurra o estado do usuário pro backend (debounced — edições disparam em rajada). */
+export function pushUserState(state: UserStatePayload): void {
+  if (!isAuthed()) return
+  clearTimeout(statePushTimer)
+  statePushTimer = setTimeout(() => {
+    api('/state', { method: 'PUT', body: state }).catch(() => {
+      /* offline-tolerante */
+    })
+  }, 500)
+}
+
+/** Puxa o estado do usuário do backend (ao logar). null se nunca sincronizou. */
+export function fetchUserState(): Promise<UserStatePayload | null> {
+  return api<UserStatePayload | null>('/state')
+}
+
 /** Puxa as sessões do backend (ao logar) e converte pro SessionRecord do cliente. */
 export async function fetchServerSessions(): Promise<SessionRecord[]> {
   const rows = await api<ServerSession[]>('/sessions?limit=200')

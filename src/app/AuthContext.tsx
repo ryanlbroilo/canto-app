@@ -10,8 +10,8 @@ import {
   LoginInput,
   RegisterInput,
 } from '../data/api'
-import { fetchServerSessions } from '../data/sync'
-import { clearUserData, getProfile, mergeServerSessions, setProfile } from '../data/store'
+import { fetchServerSessions, fetchUserState } from '../data/sync'
+import { clearUserData, getProfile, hydrateUserState, mergeServerSessions, setProfile } from '../data/store'
 
 type Status = 'loading' | 'anon' | 'authed'
 
@@ -25,14 +25,22 @@ interface AuthCtx {
 
 const Ctx = createContext<AuthCtx | null>(null)
 
-// Após autenticar: adota o nome da conta (se vazio) e hidrata as sessões do backend.
+// Após autenticar: hidrata o estado (perfil/range/settings/conquistas) e as sessões
+// do backend — o progresso segue o usuário entre dispositivos. Servidor vence.
 async function afterAuth(user: AuthUserInfo): Promise<void> {
+  try {
+    const st = await fetchUserState()
+    if (st) hydrateUserState(st)
+  } catch {
+    /* offline — segue com o local */
+  }
+  // se não há nome nem local nem no servidor, adota o da conta (isto re-empurra).
   const p = getProfile()
   if (!p.name) setProfile({ ...p, name: user.name || user.email.split('@')[0] })
   try {
     mergeServerSessions(await fetchServerSessions())
   } catch {
-    /* offline — segue com o local */
+    /* offline */
   }
 }
 

@@ -2,7 +2,7 @@
 // Migra para a API do EVA Hub depois, mantendo a mesma forma.
 import { GamificationState, Profile, Settings, SessionRecord, Streak, VocalBaseline } from './types'
 import { computeGamification } from './gamification'
-import { pushSessionToBackend } from './sync'
+import { pushSessionToBackend, pushUserState, UserStatePayload } from './sync'
 
 const K = {
   profile: 'canto.profile.v1',
@@ -38,12 +38,18 @@ function write(key: string, value: unknown): void {
 
 // ---------- Perfil ----------
 export const getProfile = (): Profile => read(K.profile, { name: '', goal: '' })
-export const setProfile = (p: Profile) => write(K.profile, p)
+export const setProfile = (p: Profile) => {
+  write(K.profile, p)
+  syncStateNow()
+}
 
 // ---------- Configurações ----------
 const DEFAULT_SETTINGS: Settings = { noiseGate: 0.006, fadingFeedback: true, targetGuide: true }
 export const getSettings = (): Settings => ({ ...DEFAULT_SETTINGS, ...read<Partial<Settings>>(K.settings, {}) })
-export const setSettings = (s: Settings) => write(K.settings, s)
+export const setSettings = (s: Settings) => {
+  write(K.settings, s)
+  syncStateNow()
+}
 
 // ---------- Baseline / range ----------
 export const getBaseline = (): VocalBaseline | null => read<VocalBaseline | null>(K.baseline, null)
@@ -52,6 +58,7 @@ export function saveBaseline(b: VocalBaseline): void {
   const hist = getRangeHistory()
   hist.push(b)
   write(K.rangeHistory, hist)
+  syncStateNow()
 }
 export const getRangeHistory = (): VocalBaseline[] => read<VocalBaseline[]>(K.rangeHistory, [])
 
@@ -96,7 +103,10 @@ export function getRangeDelta(current: VocalBaseline): RangeDelta | null {
 
 // ---------- Onboarding ----------
 export const hasSeenOnboarding = (): boolean => read<boolean>(K.seenOnboarding, false)
-export const setSeenOnboarding = () => write(K.seenOnboarding, true)
+export const setSeenOnboarding = () => {
+  write(K.seenOnboarding, true)
+  syncStateNow()
+}
 
 // ---------- Sessões ----------
 export const getSessions = (): SessionRecord[] => read<SessionRecord[]>(K.sessions, [])
@@ -191,7 +201,10 @@ export function reconcileAchievements(eligibleIds: string[]): UnlockedAchievemen
       changed = true
     }
   }
-  if (changed) write(K.achievements, stored)
+  if (changed) {
+    write(K.achievements, stored)
+    syncStateNow()
+  }
   return stored
 }
 
@@ -206,6 +219,31 @@ export function getGamification(): GamificationState {
   // grava as conquistas recém-desbloqueadas e usa a lista final (persistida)
   const unlocked = reconcileAchievements(state.achievements)
   return { ...state, achievements: unlocked.map((a) => a.id) }
+}
+
+// ---------- Sync do estado (perfil/range/settings/conquistas → backend) ----------
+// function declaration = hoisted, então os setters acima podem chamá-la.
+function syncStateNow(): void {
+  const p = getProfile()
+  pushUserState({
+    profileName: p.name,
+    profileGoal: p.goal,
+    settings: getSettings() as unknown as Record<string, unknown>,
+    baseline: getBaseline() as unknown as Record<string, unknown> | null,
+    rangeHistory: getRangeHistory() as unknown[],
+    achievements: getUnlockedAchievements() as unknown[],
+    seenOnboarding: hasSeenOnboarding(),
+  })
+}
+
+/** Aplica o estado vindo do backend no store local (servidor vence; não re-empurra). */
+export function hydrateUserState(s: UserStatePayload): void {
+  write(K.profile, { name: s.profileName ?? '', goal: s.profileGoal ?? '' })
+  if (s.settings) write(K.settings, s.settings)
+  if (s.baseline) write(K.baseline, s.baseline)
+  if (s.rangeHistory) write(K.rangeHistory, s.rangeHistory)
+  if (s.achievements) write(K.achievements, s.achievements)
+  if (s.seenOnboarding !== undefined) write(K.seenOnboarding, s.seenOnboarding)
 }
 
 // ---------- util ----------

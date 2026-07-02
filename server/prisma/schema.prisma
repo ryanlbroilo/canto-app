@@ -36,9 +36,30 @@ model User {
   createdAt    DateTime       @default(now())
   refreshTokens RefreshToken[]
   sessions     VocalSession[]
+  state        UserState?
 
   // e-mail é único DENTRO do tenant (mesmo e-mail pode existir em tenants diferentes)
   @@unique([tenantId, email])
+  @@index([tenantId])
+}
+
+// Estado do usuário sincronizado (perfil, range/baseline, settings, conquistas,
+// onboarding) — segue o usuário entre dispositivos. Um por usuário (1:1).
+// Sessões e gamificação derivada continuam em VocalSession; aqui fica o resto.
+model UserState {
+  userId         String   @id
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenantId       String
+  profileName    String?
+  profileGoal    String?
+  settings       Json? // { noiseGate, fadingFeedback, targetGuide }
+  baseline       Json? // VocalBaseline atual
+  rangeHistory   Json? // VocalBaseline[]
+  achievements   Json? // [{ id, at }]
+  seenOnboarding Boolean  @default(false)
+  updatedAt      DateTime @updatedAt
+  createdAt      DateTime @default(now())
+
   @@index([tenantId])
 }
 
