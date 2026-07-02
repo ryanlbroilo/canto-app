@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useApp } from '../app/AppContext'
 import { getExercise } from '../data/exercises'
+import { diagnose } from '../data/coaching'
+import { SKILL_BY_ID } from '../data/skills'
 import { addSession, newId } from '../data/store'
 import { PitchEngine } from '../audio/PitchEngine'
 import { PitchGraph } from '../components/PitchGraph'
@@ -137,7 +139,7 @@ function Breathing({ ex, onFinish, onExit, review }: { ex: Exercise; onFinish: F
   }, [started, done])
 
   if (done) {
-    return <Result title="Respiração concluída" score={null} note="Respiração é a base de tudo — apoio e afinação mais estáveis. 👏" onRepeat={() => { setStarted(false); setDone(false); setClock(0) }} onExit={onExit} review={review} />
+    return <Result title="Respiração concluída" exercise={ex} score={null} note="Respiração é a base de tudo — apoio e afinação mais estáveis. 👏" onRepeat={() => { setStarted(false); setDone(false); setClock(0) }} onExit={onExit} review={review} />
   }
 
   return (
@@ -221,6 +223,7 @@ function Siren({ engine, ex, onFinish, onExit, review }: { engine: PitchEngine; 
     return (
       <Result
         title="Sirene concluída"
+        exercise={ex}
         score={null}
         note={`Você percorreu cerca de ${semis} semitons. Sirenes suaves conectam os registros — ótimo aquecimento.`}
         report={reportRef.current ?? undefined}
@@ -408,8 +411,9 @@ function Sequence({
     return (
       <Result
         title="Exercício concluído"
+        exercise={ex}
         score={Math.round(result.score)}
-        note={`Desvio médio de ${Math.round(result.avgDev)}¢. ${result.score >= 70 ? 'Afinação sólida — pode subir a dificuldade.' : 'Foque em chegar na nota e segurar no centro.'}`}
+        note={`Desvio médio de ${Math.round(result.avgDev)}¢.`}
         report={result.report}
         onRepeat={() => { setResult(null); setPhase('ready') }}
         onExit={onExit}
@@ -455,6 +459,7 @@ function Sequence({
 /* ---------------- Resultado ---------------- */
 function Result({
   title,
+  exercise,
   score,
   note,
   report,
@@ -463,6 +468,7 @@ function Result({
   review,
 }: {
   title: string
+  exercise: Exercise
   score: number | null
   note: string
   report?: FeatureReport
@@ -471,6 +477,8 @@ function Result({
   review?: ReviewCtx
 }) {
   const isLast = review ? review.index + 1 >= review.total : false
+  // O "EVA que explica": diagnóstico determinístico sobre o feature-JSON.
+  const diag = report ? diagnose(report, exercise, score) : null
   return (
     <div className="player">
       <div className="player-step">{title}</div>
@@ -480,9 +488,43 @@ function Result({
           <Icon name="check" size={30} />
         </div>
       )}
-      <p className="hint center" style={{ maxWidth: '42ch' }}>
-        {note}
-      </p>
+
+      {diag ? (
+        <div className="coach" data-tone={diag.tone} style={{ width: '100%', maxWidth: 520 }}>
+          <p className="coach-headline">{diag.headline}</p>
+          {diag.strengths.length > 0 && (
+            <div className="coach-strengths">
+              {diag.strengths.map((s, i) => (
+                <span className="coach-good" key={i}>
+                  <Icon name="check" size={13} /> {s}
+                </span>
+              ))}
+            </div>
+          )}
+          {diag.insights.map((ins) => {
+            const sk = SKILL_BY_ID[ins.skill]
+            return (
+              <div className="coach-insight" key={ins.id}>
+                <span className="coach-ins-icon" style={{ color: sk?.color }}>
+                  <Icon name={sk?.icon ?? 'target'} size={16} />
+                </span>
+                <div className="coach-ins-body">
+                  <div className="coach-what">
+                    {ins.what} <span className="coach-sev" data-sev={ins.severity}>{ins.severity}</span>
+                  </div>
+                  <div className="coach-why">{ins.why}</div>
+                  <div className="coach-cue"><Icon name="spark" size={12} /> {ins.cue}</div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        <p className="hint center" style={{ maxWidth: '42ch' }}>
+          {note}
+        </p>
+      )}
+
       {report && (
         <div style={{ width: '100%', maxWidth: 520 }}>
           <SessionSummary report={report} />

@@ -641,3 +641,89 @@
 .r4 {
   animation-delay: 280ms;
 }
+
+/* ============================================================
+   EVA que explica — diagnóstico pós-exercício (o quê/por quê/como)
+   ============================================================ */
+.coach {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  text-align: left;
+  padding: 18px 18px 16px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-lg, 18px);
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+}
+.coach-headline {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 17px;
+  line-height: 1.35;
+  color: var(--text);
+  text-wrap: balance;
+}
+.coach[data-tone='great'] .coach-headline { color: var(--good, #57d6a6); }
+.coach[data-tone='work'] .coach-headline { color: var(--gold-2); }
+
+.coach-strengths { display: flex; flex-wrap: wrap; gap: 8px; }
+.coach-good {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--good, #57d6a6);
+  padding: 4px 10px;
+  border-radius: var(--r-pill, 999px);
+  background: rgba(87, 214, 166, 0.1);
+  border: 1px solid rgba(87, 214, 166, 0.25);
+}
+
+.coach-insight {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--hairline);
+}
+.coach-ins-icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--hairline);
+}
+.coach-ins-body { min-width: 0; }
+.coach-what {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+.coach-sev {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 999px;
+  color: var(--muted);
+  border: 1px solid var(--hairline);
+}
+.coach-sev[data-sev='alta'] { color: var(--off, #f26d5b); border-color: rgba(242, 109, 91, 0.4); }
+.coach-sev[data-sev='média'] { color: var(--close, #f0b94a); border-color: rgba(240, 185, 74, 0.4); }
+.coach-why { font-size: 13px; color: var(--muted); margin-top: 4px; }
+.coach-cue {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--gold-2);
+  margin-top: 7px;
+}
+.coach-cue svg { flex: none; margin-top: 3px; }
