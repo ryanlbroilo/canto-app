@@ -1,0 +1,151 @@
+/* ============================================================
+   Planos & assinatura
+   ============================================================ */
+.plan-current {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.plan-current-tag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.plan-current-name {
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 4px;
+}
+.plan-current-sub { font-size: 13px; color: var(--muted); margin-top: 3px; }
+.plan-current-hint { font-size: 13.5px; color: var(--muted); }
+
+/* ciclo */
+.plan-cycle {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  margin: 20px 0 6px;
+  background: var(--panel-2);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-pill, 999px);
+}
+.plan-cycle button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-family: var(--font-ui);
+  font-size: 13.5px;
+  font-weight: 600;
+  border-radius: var(--r-pill, 999px);
+  cursor: pointer;
+  transition: color 140ms var(--ease), background 140ms var(--ease);
+}
+.plan-cycle button[data-active='true'] {
+  color: #1a140a;
+  background: linear-gradient(135deg, var(--gold), #f3cd7e);
+}
+.plan-save {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(95, 214, 164, 0.15);
+  color: var(--good, #57d6a6);
+}
+.plan-cycle button[data-active='true'] .plan-save { background: rgba(26, 20, 10, 0.18); color: #1a140a; }
+
+.plan-msg {
+  margin: 14px 0 0;
+  padding: 12px 16px;
+  border: 1px solid rgba(233, 180, 76, 0.35);
+  border-radius: 12px;
+  background: rgba(233, 180, 76, 0.06);
+  font-size: 14px;
+  color: var(--gold-2);
+}
+
+/* grade de planos */
+.plan-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 16px;
+}
+.plan-grid--b2b { grid-template-columns: 1fr 1fr; }
+@media (max-width: 640px) { .plan-grid, .plan-grid--b2b { grid-template-columns: 1fr; } }
+
+.plan-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 22px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-lg, 18px);
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+}
+.plan-card[data-featured='true'] {
+  border-color: rgba(233, 180, 76, 0.45);
+  box-shadow: 0 22px 60px -34px rgba(233, 180, 76, 0.6);
+}
+.plan-card[data-current='true'] { outline: 1px solid rgba(95, 214, 164, 0.4); }
+.plan-ribbon {
+  position: absolute;
+  top: -1px;
+  right: 18px;
+  transform: translateY(-50%);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #1a140a;
+  background: linear-gradient(135deg, var(--gold), #f3cd7e);
+  padding: 4px 11px;
+  border-radius: 999px;
+}
+.plan-card-name { font-family: var(--font-display); font-size: 20px; font-weight: 600; color: var(--text); }
+.plan-card-aud { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+
+.plan-price { display: flex; align-items: baseline; gap: 6px; margin-top: 4px; }
+.plan-price-big {
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 600;
+  color: var(--gold-2);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.plan-price-per { font-size: 14px; color: var(--muted); }
+.plan-price-note { font-size: 12px; color: var(--faint); margin-top: -6px; }
+.plan-tagline { font-size: 14px; color: var(--text); }
+
+.plan-feats { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+.plan-feats li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+.plan-feats li svg { color: var(--good, #57d6a6); flex: none; margin-top: 3px; }
+
+.plan-cta { margin-top: auto; padding-top: 8px; }
+.plan-cta .btn { width: 100%; justify-content: center; }
+
+/* seção B2B */
+.plan-b2b-head { margin-top: 34px; }
+.plan-b2b-title { font-family: var(--font-display); font-size: 24px; font-weight: 600; color: var(--text); }
+.plan-b2b-sub { font-size: 14px; color: var(--muted); margin-top: 6px; max-width: 60ch; }
+
+.plan-foot { margin-top: 26px; font-size: 12.5px; color: var(--faint); text-align: center; }

@@ -81,6 +81,17 @@ export default function Settings() {
         </div>
       )}
 
+      <Link to="/planos" className="card reveal r0" style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18, textDecoration: 'none', color: 'inherit' }}>
+        <span style={{ display: 'grid', placeItems: 'center', width: 40, height: 40, flex: 'none', borderRadius: 12, color: 'var(--gold-2)', background: 'rgba(233,180,76,0.1)', border: '1px solid var(--hairline)' }}>
+          <Icon name="bolt" size={20} />
+        </span>
+        <div style={{ flex: 1 }}>
+          <div className="setting-label">Planos e assinatura</div>
+          <div className="setting-desc">Desbloqueie o coach completo — EVA que explica, caminho ilimitado, saúde vocal e progresso a fundo.</div>
+        </div>
+        <Icon name="chevron" size={18} />
+      </Link>
+
       <div className="grid grid-2">
         <div className="card reveal r0">
           <span className="card-title">Perfil</span>
