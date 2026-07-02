@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import '../styles/exercises.css'
-import { getExercise } from '../data/exercises'
+import { getExercise, EXERCISES, EXERCISE_COUNT } from '../data/exercises'
 import { TRACKS, trackForLevel } from '../data/tracks'
-import { SKILL_BY_ID } from '../data/skills'
-import { Exercise, ExerciseKind, TrackLevel } from '../data/types'
+import { SKILL_BY_ID, SKILLS } from '../data/skills'
+import { Exercise, ExerciseKind, ExercisePhase, SkillId, TrackLevel } from '../data/types'
 import { useApp } from '../app/AppContext'
 import { Icon, IconName } from '../components/ui/Icon'
 
@@ -40,6 +40,7 @@ export default function Exercises() {
   const { gamification } = useApp()
   const done = gamification.exercisesDone
   const reco = gamification.recommendation
+  const [view, setView] = useState<'trilha' | 'biblioteca'>('trilha')
 
   // Descobre o nível "atual" do cantor: a primeira trilha que ainda não está
   // 100% dominada. Serve de aba inicial e de foco do resumo.
@@ -79,12 +80,26 @@ export default function Exercises() {
         <div>
           <h1 className="page-title">Exercícios</h1>
           <p className="page-sub">
-            Três trilhas, um caminho. Siga os nós na ordem — cada exercício dá feedback de afinação em tempo real e
-            registra sua melhor pontuação. Domine um para acender o próximo.
+            Uma trilha curada te guia passo a passo — e uma biblioteca de {EXERCISE_COUNT} exercícios te deixa treinar
+            exatamente o que quiser. Cada um dá feedback de afinação em tempo real e registra sua melhor pontuação.
           </p>
         </div>
       </div>
 
+      {/* Alternador: caminho curado ↔ biblioteca completa */}
+      <div className="ex-switch" role="tablist" aria-label="Modo de visualização">
+        <button role="tab" aria-selected={view === 'trilha'} data-active={view === 'trilha'} onClick={() => setView('trilha')}>
+          <Icon name="route" size={15} /> Trilha
+        </button>
+        <button role="tab" aria-selected={view === 'biblioteca'} data-active={view === 'biblioteca'} onClick={() => setView('biblioteca')}>
+          <Icon name="dumbbell" size={15} /> Biblioteca · {EXERCISE_COUNT}
+        </button>
+      </div>
+
+      {view === 'biblioteca' && <Catalog done={done} recoId={reco?.exerciseId} />}
+
+      {view === 'trilha' && (
+      <>
       {/* Resumo geral: nível atual + progresso da trilha ativa */}
       <SummaryCard level={currentLevel} activeLevel={level} pct={trackPct} mastered={masteredCount} total={stops.length} />
 
@@ -175,6 +190,8 @@ export default function Exercises() {
           </span>
         </div>
       </div>
+      </>
+      )}
     </div>
   )
 }
@@ -368,6 +385,170 @@ function StopNode({
           )}
         </div>
       </Link>
+    </div>
+  )
+}
+
+/* ---------------- Biblioteca completa (catálogo filtrado) ---------------- */
+const LEVEL_OPTS: { v: TrackLevel | 'all'; label: string }[] = [
+  { v: 'all', label: 'Todos os níveis' },
+  { v: 'iniciante', label: 'Iniciante' },
+  { v: 'intermediario', label: 'Intermediário' },
+  { v: 'avancado', label: 'Avançado' },
+]
+const PHASE_OPTS: { v: ExercisePhase | 'all'; label: string }[] = [
+  { v: 'all', label: 'Todas as fases' },
+  { v: 'aquecimento', label: 'Aquecimento' },
+  { v: 'tecnica', label: 'Técnica' },
+  { v: 'aplicacao', label: 'Aplicação' },
+]
+const KIND_OPTS: { v: ExerciseKind | 'all'; label: string }[] = [
+  { v: 'all', label: 'Todos os tipos' },
+  { v: 'breathing', label: 'Respiração' },
+  { v: 'siren', label: 'Sirene' },
+  { v: 'scale', label: 'Escala' },
+  { v: 'interval', label: 'Intervalo' },
+  { v: 'sustain', label: 'Sustentação' },
+]
+const PHASE_LABEL: Record<ExercisePhase, string> = {
+  aquecimento: 'Aquecimento',
+  tecnica: 'Técnica',
+  aplicacao: 'Aplicação',
+}
+const LEVEL_LABEL: Record<TrackLevel, string> = {
+  iniciante: 'Iniciante',
+  intermediario: 'Intermediário',
+  avancado: 'Avançado',
+}
+
+function Catalog({
+  done,
+  recoId,
+}: {
+  done: Record<string, { count: number; bestScore: number }>
+  recoId?: string
+}) {
+  const [q, setQ] = useState('')
+  const [lvl, setLvl] = useState<TrackLevel | 'all'>('all')
+  const [phase, setPhase] = useState<ExercisePhase | 'all'>('all')
+  const [kind, setKind] = useState<ExerciseKind | 'all'>('all')
+  const [skill, setSkill] = useState<SkillId | 'all'>('all')
+
+  const results = useMemo(() => {
+    const needle = q.trim().toLowerCase()
+    return EXERCISES.filter((e) => {
+      if (lvl !== 'all' && e.level !== lvl) return false
+      if (phase !== 'all' && e.phase !== phase) return false
+      if (kind !== 'all' && e.kind !== kind) return false
+      if (skill !== 'all' && !e.skills.includes(skill)) return false
+      if (needle && !`${e.name} ${e.focus} ${e.description}`.toLowerCase().includes(needle)) return false
+      return true
+    })
+  }, [q, lvl, phase, kind, skill])
+
+  const anyFilter = q.trim() !== '' || lvl !== 'all' || phase !== 'all' || kind !== 'all' || skill !== 'all'
+  const reset = () => {
+    setQ('')
+    setLvl('all')
+    setPhase('all')
+    setKind('all')
+    setSkill('all')
+  }
+
+  return (
+    <div className="reveal">
+      {/* filtros */}
+      <div className="card cat-filters">
+        <input
+          className="cat-search"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder={`Buscar entre ${EXERCISE_COUNT} exercícios (nome, foco, descrição)…`}
+          aria-label="Buscar exercícios"
+        />
+        <div className="cat-selects">
+          <select value={lvl} onChange={(e) => setLvl(e.target.value as TrackLevel | 'all')} aria-label="Nível">
+            {LEVEL_OPTS.map((o) => (
+              <option key={o.v} value={o.v}>{o.label}</option>
+            ))}
+          </select>
+          <select value={phase} onChange={(e) => setPhase(e.target.value as ExercisePhase | 'all')} aria-label="Fase">
+            {PHASE_OPTS.map((o) => (
+              <option key={o.v} value={o.v}>{o.label}</option>
+            ))}
+          </select>
+          <select value={kind} onChange={(e) => setKind(e.target.value as ExerciseKind | 'all')} aria-label="Tipo">
+            {KIND_OPTS.map((o) => (
+              <option key={o.v} value={o.v}>{o.label}</option>
+            ))}
+          </select>
+          <select value={skill} onChange={(e) => setSkill(e.target.value as SkillId | 'all')} aria-label="Competência">
+            <option value="all">Todas as competências</option>
+            {SKILLS.map((s) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="cat-count">
+        <span>
+          <b>{results.length}</b> {results.length === 1 ? 'exercício' : 'exercícios'}
+          {anyFilter ? ' no filtro' : ' na biblioteca'}
+        </span>
+        {anyFilter && (
+          <button className="btn btn--sm btn--ghost" onClick={reset}>Limpar filtros</button>
+        )}
+      </div>
+
+      {results.length === 0 ? (
+        <div className="card cat-empty">
+          <Icon name="target" size={22} />
+          <p>Nada com esses filtros. Tente afrouxar a busca ou trocar o tipo/competência.</p>
+        </div>
+      ) : (
+        <div className="cat-grid">
+          {results.map((ex) => {
+            const d = done[ex.id]
+            const best = d?.bestScore ?? 0
+            const mastered = best >= MASTERY
+            return (
+              <Link key={ex.id} to={`/exercicios/${ex.id}`} className="cat-card" data-reco={ex.id === recoId}>
+                <div className="cat-card-top">
+                  <span className="cat-card-icon"><Icon name={KIND_ICON[ex.kind]} size={18} /></span>
+                  <div className="grow">
+                    <div className="cat-card-name">{ex.name}</div>
+                    <div className="cat-card-focus">{ex.focus}</div>
+                  </div>
+                  {mastered && <span className="cat-card-crown" title="Dominado"><Icon name="crown" size={15} /></span>}
+                </div>
+                <div className="cat-card-tags">
+                  <span className="cat-tag cat-tag--phase">{PHASE_LABEL[ex.phase]}</span>
+                  <span className="cat-tag">{LEVEL_LABEL[ex.level]}</span>
+                  {ex.skills.slice(0, 2).map((sid) => {
+                    const s = SKILL_BY_ID[sid]
+                    return s ? (
+                      <span key={sid} className="cat-tag cat-tag--skill" style={{ ['--skill' as string]: s.color }}>
+                        {s.name}
+                      </span>
+                    ) : null
+                  })}
+                </div>
+                <div className="cat-card-meta">
+                  <span className="trk-diff" title={`Dificuldade ${ex.difficulty ?? 3}/5`}>
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <span key={n} className="trk-diff-dot" data-on={n <= (ex.difficulty ?? 0)} />
+                    ))}
+                  </span>
+                  <span className="cat-meta-item"><Icon name="play" size={12} />{ex.durationMin}m</span>
+                  <span className="cat-meta-item cat-xp"><Icon name="bolt" size={12} />+{ex.xp}</span>
+                  {best > 0 && <span className="cat-meta-item cat-best" data-mastered={mastered}><Icon name="star" size={12} />{best}</span>}
+                </div>
+              </Link>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

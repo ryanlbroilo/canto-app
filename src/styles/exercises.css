@@ -588,3 +588,233 @@
     order: 0 !important;
   }
 }
+
+/* ============================================================
+   Alternador Trilha ↔ Biblioteca + Catálogo completo (~300)
+   ============================================================ */
+.ex-switch {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  margin: 4px 0 18px;
+  background: var(--panel-2);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-pill);
+}
+.ex-switch button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-family: var(--font-ui);
+  font-size: 13.5px;
+  font-weight: 600;
+  border-radius: var(--r-pill);
+  cursor: pointer;
+  transition: color 140ms var(--ease), background 140ms var(--ease);
+}
+.ex-switch button:hover {
+  color: var(--text);
+}
+.ex-switch button[data-active='true'] {
+  color: #1a140a;
+  background: linear-gradient(135deg, var(--gold), #f3cd7e);
+  box-shadow: var(--shadow-gold);
+}
+
+/* ---- filtros ---- */
+.cat-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.cat-search {
+  width: 100%;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--text);
+  background: var(--bg-1);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+}
+.cat-search::placeholder {
+  color: var(--faint);
+}
+.cat-search:focus {
+  outline: none;
+  border-color: rgba(233, 180, 76, 0.45);
+}
+.cat-selects {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+@media (max-width: 720px) {
+  .cat-selects {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.cat-selects select {
+  width: 100%;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--text);
+  background: var(--bg-1);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  padding: 10px 12px;
+  cursor: pointer;
+}
+.cat-selects select:focus {
+  outline: none;
+  border-color: rgba(233, 180, 76, 0.45);
+}
+
+.cat-count {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+.cat-count b {
+  font-family: var(--font-mono);
+  color: var(--gold-2);
+}
+
+/* ---- grade de cards ---- */
+.cat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+.cat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  padding: 15px 16px;
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-lg);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 140ms var(--ease), border-color 140ms var(--ease), box-shadow 140ms var(--ease);
+}
+.cat-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--hairline-strong);
+  box-shadow: var(--shadow-1);
+}
+.cat-card[data-reco='true'] {
+  border-color: rgba(233, 180, 76, 0.5);
+  box-shadow: var(--shadow-gold);
+}
+.cat-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+}
+.cat-card-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: var(--r-md);
+  color: var(--gold-2);
+  background: rgba(233, 180, 76, 0.1);
+  border: 1px solid var(--hairline);
+}
+.cat-card .grow {
+  min-width: 0;
+  flex: 1;
+}
+.cat-card-name {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.2;
+}
+.cat-card-focus {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cat-card-crown {
+  color: var(--gold);
+  flex: none;
+}
+.cat-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.cat-tag {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 3px 8px;
+  border-radius: var(--r-pill);
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--hairline);
+}
+.cat-tag--phase {
+  color: var(--gold-2);
+  background: rgba(233, 180, 76, 0.08);
+}
+.cat-tag--skill {
+  color: var(--skill, var(--muted));
+  border-color: color-mix(in srgb, var(--skill, #888) 35%, transparent);
+  background: color-mix(in srgb, var(--skill, #888) 12%, transparent);
+}
+.cat-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.cat-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.cat-xp {
+  color: var(--gold-2);
+  font-family: var(--font-mono);
+}
+.cat-best {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  color: var(--good);
+}
+.cat-best[data-mastered='true'] {
+  color: var(--gold);
+}
+
+.cat-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted);
+}
+.cat-empty svg {
+  color: var(--faint);
+}
