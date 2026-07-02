@@ -17,6 +17,7 @@ const TREINO: NavItem[] = [
 ]
 const ACOMP: NavItem[] = [
   { to: '/progresso', label: 'Progresso', icon: 'chart' },
+  { to: '/time', label: 'Meu time', icon: 'crown' },
   { to: '/eva', label: 'EVA Coach', icon: 'spark' },
 ]
 

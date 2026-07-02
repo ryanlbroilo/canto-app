@@ -143,3 +143,59 @@ export async function apiLogout(): Promise<void> {
   saveAuth(null)
 }
 export const apiMe = (): Promise<AuthUserInfo> => api<AuthUserInfo>('/auth/me')
+
+// ---------- Convites / Time (B2B2C) ----------
+export interface InvitePreview {
+  valid: boolean
+  reason?: string
+  tenantName?: string
+  tenantSlug?: string
+  role?: string
+  email?: string | null
+}
+export const apiPreviewInvite = (token: string): Promise<InvitePreview> =>
+  api<InvitePreview>(`/invites/preview/${encodeURIComponent(token)}`, { auth: false })
+
+export interface RegisterInviteInput {
+  token: string
+  email: string
+  password: string
+  name?: string
+}
+export async function apiRegisterInvite(input: RegisterInviteInput): Promise<AuthUserInfo> {
+  const r = await api<{ user: AuthUserInfo; tokens: Tokens }>('/auth/register-invite', { method: 'POST', body: input, auth: false })
+  saveAuth({ user: r.user, tokens: r.tokens })
+  return r.user
+}
+
+export interface Invite {
+  id: string
+  token: string
+  email: string | null
+  role: string
+  expiresAt: string
+  maxUses: number | null
+  useCount: number
+  status: 'ok' | 'revoked' | 'expired' | 'exhausted'
+}
+export interface CreateInviteInput {
+  role?: 'MEMBER' | 'ADMIN'
+  email?: string
+  expiresInDays?: number
+  maxUses?: number
+}
+export const apiListInvites = (): Promise<Invite[]> => api<Invite[]>('/invites')
+export const apiCreateInvite = (body: CreateInviteInput): Promise<Invite> => api<Invite>('/invites', { method: 'POST', body })
+export const apiRevokeInvite = (id: string): Promise<unknown> => api(`/invites/${id}`, { method: 'DELETE' })
+
+export interface Member {
+  id: string
+  name: string | null
+  email: string
+  role: string
+  createdAt: string
+  sessionCount: number
+  totalXp: number
+  lastSessionAt: string | null
+}
+export const apiListMembers = (): Promise<Member[]> => api<Member[]>('/tenant/members')

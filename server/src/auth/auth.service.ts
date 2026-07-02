@@ -9,7 +9,8 @@ import { Role, User } from '@prisma/client'
 import * as argon2 from 'argon2'
 import { createHash, randomBytes } from 'node:crypto'
 import { PrismaService } from '../prisma/prisma.service'
-import { LoginDto, RegisterDto } from './dto/auth.dto'
+import { inviteValidity } from '../invites/invites.service'
+import { LoginDto, RegisterDto, RegisterInviteDto } from './dto/auth.dto'
 import { AccessTokenPayload } from './strategies/jwt.strategy'
 
 export interface TokenBundle {
@@ -46,6 +47,35 @@ export class AuthService {
 
     const tokens = await this.issueTokens(user)
     return { user: toPublicUser(user, slug), tokens }
+  }
+
+  // ---------- Registro VIA CONVITE (entra num tenant existente) ----------
+  async registerWithInvite(dto: RegisterInviteDto): Promise<{ user: PublicUser; tokens: TokenBundle }> {
+    const email = dto.email.toLowerCase()
+    const passwordHash = await argon2.hash(dto.password)
+
+    const { user, tenantSlug } = await this.prisma.$transaction(async (tx) => {
+      const invite = await tx.invite.findUnique({ where: { token: dto.token }, include: { tenant: true } })
+      if (!invite || inviteValidity(invite) !== 'ok') {
+        throw new UnauthorizedException('Convite inválido ou expirado.')
+      }
+      if (invite.email && invite.email.toLowerCase() !== email) {
+        throw new UnauthorizedException('Este convite é para outro e-mail.')
+      }
+      const existing = await tx.user.findUnique({
+        where: { tenantId_email: { tenantId: invite.tenantId, email } },
+      })
+      if (existing) throw new ConflictException('Já existe uma conta com esse e-mail nesta organização.')
+
+      const u = await tx.user.create({
+        data: { tenantId: invite.tenantId, email, passwordHash, name: dto.name, role: invite.role },
+      })
+      await tx.invite.update({ where: { id: invite.id }, data: { useCount: { increment: 1 } } })
+      return { user: u, tenantSlug: invite.tenant.slug }
+    })
+
+    const tokens = await this.issueTokens(user)
+    return { user: toPublicUser(user, tenantSlug), tokens }
   }
 
   // ---------- Login (escopado por tenant) ----------

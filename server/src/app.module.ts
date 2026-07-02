@@ -6,7 +6,9 @@ import { AuthModule } from './auth/auth.module'
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard'
 import { envValidationSchema } from './config/env.validation'
 import { HealthModule } from './health/health.module'
+import { InvitesModule } from './invites/invites.module'
 import { PrismaModule } from './prisma/prisma.module'
+import { TenantModule } from './tenant/tenant.module'
 import { bullRootConfig } from './queue/bull-config'
 import { RedisModule } from './redis/redis.module'
 import { SessionsModule } from './sessions/sessions.module'
@@ -21,6 +23,8 @@ import { StateModule } from './state/state.module'
     AuthModule,
     SessionsModule,
     StateModule,
+    InvitesModule,
+    TenantModule,
     HealthModule,
   ],
   providers: [

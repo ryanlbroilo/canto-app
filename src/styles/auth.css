@@ -114,6 +114,22 @@
   box-shadow: 0 0 0 3px rgba(233, 180, 76, 0.12);
 }
 
+.auth-invite {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13.5px;
+  color: var(--good);
+  background: rgba(87, 214, 166, 0.1);
+  border: 1px solid rgba(87, 214, 166, 0.28);
+  border-radius: 11px;
+  padding: 10px 13px;
+  margin-bottom: 2px;
+}
+.auth-invite strong {
+  color: #eafff6;
+}
+
 .auth-error {
   margin: 2px 0 0;
   font-size: 13px;

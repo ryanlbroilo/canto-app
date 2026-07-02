@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpCode, Post } from '@nestjs/common'
 import { AuthService } from './auth.service'
-import { LoginDto, RefreshDto, RegisterDto } from './dto/auth.dto'
+import { LoginDto, RefreshDto, RegisterDto, RegisterInviteDto } from './dto/auth.dto'
 import { Public } from '../common/decorators/public.decorator'
 import { AuthUser, CurrentUser } from '../common/decorators/current-user.decorator'
 
@@ -12,6 +12,12 @@ export class AuthController {
   @Post('register')
   register(@Body() dto: RegisterDto) {
     return this.auth.register(dto)
+  }
+
+  @Public()
+  @Post('register-invite')
+  registerInvite(@Body() dto: RegisterInviteDto) {
+    return this.auth.registerWithInvite(dto)
   }
 
   @Public()

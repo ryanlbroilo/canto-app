@@ -4,11 +4,13 @@ import {
   apiLogout,
   apiMe,
   apiRegister,
+  apiRegisterInvite,
   AuthUserInfo,
   currentUser,
   isAuthed,
   LoginInput,
   RegisterInput,
+  RegisterInviteInput,
 } from '../data/api'
 import { fetchServerSessions, fetchUserState } from '../data/sync'
 import { clearUserData, getProfile, hydrateUserState, mergeServerSessions, setProfile } from '../data/store'
@@ -20,6 +22,7 @@ interface AuthCtx {
   status: Status
   login: (input: LoginInput) => Promise<void>
   register: (input: RegisterInput) => Promise<void>
+  registerWithInvite: (input: RegisterInviteInput) => Promise<void>
   logout: () => Promise<void>
 }
 
@@ -76,6 +79,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus('authed')
   }, [])
 
+  const registerWithInvite = useCallback(async (input: RegisterInviteInput) => {
+    const u = await apiRegisterInvite(input)
+    await afterAuth(u)
+    setUser(u)
+    setStatus('authed')
+  }, [])
+
   const logout = useCallback(async () => {
     await apiLogout()
     clearUserData()
@@ -83,7 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus('anon')
   }, [])
 
-  return <Ctx.Provider value={{ user, status, login, register, logout }}>{children}</Ctx.Provider>
+  return <Ctx.Provider value={{ user, status, login, register, registerWithInvite, logout }}>{children}</Ctx.Provider>
 }
 
 export function useAuth(): AuthCtx {
