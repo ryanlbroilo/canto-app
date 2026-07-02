@@ -155,22 +155,6 @@ export function recommendNext(args: RecommendArgs): AdaptiveRecommendation | nul
     )
   }
 
-  // (4.5) Repetição espaçada: um exercício já aprendido está "esquecido" há
-  // vários dias → nudge de revisar (fixa retenção, estilo Duolingo).
-  const due = args.exercisesDone ? dueForReview(args.sessions, args.exercisesDone) : []
-  const stale = due.find((d) => d.daysSince >= 5)
-  const staleEx = stale ? getExercise(stale.id) : undefined
-  if (stale && staleEx) {
-    return rec(
-      stale.id,
-      withUnit(
-        stale.id,
-        `Faz ${Math.round(stale.daysSince)} dias que você não treina “${staleEx.name}”. Uma revisão rápida fixa o que já aprendeu.`,
-      ),
-      'revisão',
-    )
-  }
-
   // (5) Indo muito bem (acerto alto e nenhuma quebra) → evoluir na trilha.
   if (p.notesHitPct >= 85 && breaks === 0) {
     const next = nextInTrack(level, args.completedIds)
@@ -195,6 +179,24 @@ export function recommendNext(args: RecommendArgs): AdaptiveRecommendation | nul
         'evoluir',
       )
     }
+  }
+
+  // (5.5) Repetição espaçada: NÃO estamos em "avançar agora" (rule 5 não disparou),
+  // mas há um exercício já aprendido "esquecido" há vários dias → nudge de revisar.
+  // Fica DEPOIS da progressão de propósito: quem está arrasando avança; a revisão
+  // é manutenção quando o passo não é claramente "seguir em frente".
+  const due = args.exercisesDone ? dueForReview(args.sessions, args.exercisesDone) : []
+  const stale = due.find((d) => d.daysSince >= 5)
+  const staleEx = stale ? getExercise(stale.id) : undefined
+  if (stale && staleEx) {
+    return rec(
+      stale.id,
+      withUnit(
+        stale.id,
+        `Faz ${Math.round(stale.daysSince)} dias que você não treina “${staleEx.name}”. Uma revisão rápida fixa o que já aprendeu.`,
+      ),
+      'revisão',
+    )
   }
 
   // (6) Fallback neutro: continuar o caminho do nível apropriado.
