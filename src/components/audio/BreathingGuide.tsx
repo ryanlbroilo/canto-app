@@ -1,15 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 
-// Guia de respiração ANATÔMICO — o corpo respirando de verdade.
-// Um torso estilizado (cabeça, ombros, tórax, barriga) onde:
-//   • os PULMÕES enchem de baixo pra cima no inspire;
-//   • o DIAFRAGMA desce e achata (o gesto real da respiração diafragmática);
-//   • a BARRIGA expande pra fora (a dica técnica: barriga sai, ombros parados);
-//   • o AR flui pra dentro/fora conforme a fase.
-// Movimento contínuo a 60fps: um rAF calcula o valor de respiração `--b` (0..1)
-// com easing por fase e escreve numa CSS var; o SVG lê `--b` via calc() nos
-// transforms (GPU, sem transição brigando com o rAF). Rótulo/contagem em estado
-// React, atualizados só na virada (não a cada frame).
+// Guia de respiração — uma figura HUMANA serena respirando (não um diagrama).
+// Uma silhueta (cabeça, ombros, peito, barriga) com uma LUZ interna que sobe e
+// enche no inspire; a barriga expande pra fora (respiração diafragmática) e o
+// corpo sobe de leve. Órgãos viram brilho, não anatomia clínica.
+// 60fps via rAF escrevendo a CSS var --b (0..1) com easing suave por fase; o SVG
+// lê --b nos transforms (GPU). Rótulo/contagem só re-renderizam na virada.
 
 const CYCLE = [
   { key: 'inspire', name: 'Inspire', dur: 4 },
@@ -18,7 +14,7 @@ const CYCLE = [
 ] as const
 const CYCLE_LEN = CYCLE.reduce((a, c) => a + c.dur, 0) // 14s
 
-const easeOutCubic = (x: number) => 1 - Math.pow(1 - x, 3)
+// Seno suave (natural): inspira e solta com a mesma curva orgânica.
 const easeInOutSine = (x: number) => -(Math.cos(Math.PI * x) - 1) / 2
 
 function breathAt(inCycle: number): { breath: number; key: string; name: string; remain: number } {
@@ -26,7 +22,7 @@ function breathAt(inCycle: number): { breath: number; key: string; name: string;
   for (const c of CYCLE) {
     if (inCycle < acc + c.dur) {
       const p = (inCycle - acc) / c.dur
-      const breath = c.key === 'inspire' ? easeOutCubic(p) : c.key === 'hold' ? 1 : 1 - easeInOutSine(p)
+      const breath = c.key === 'inspire' ? easeInOutSine(p) : c.key === 'hold' ? 1 : 1 - easeInOutSine(p)
       return { breath, key: c.key, name: c.name, remain: Math.ceil(acc + c.dur - inCycle) }
     }
     acc += c.dur
@@ -62,71 +58,63 @@ export function BreathingGuide({ startedAt, running }: { startedAt: number; runn
 
   return (
     <div className="breath-guide" ref={rootRef} data-phase="inspire" style={{ ['--b' as string]: 0 } as React.CSSProperties}>
-      <svg viewBox="0 0 220 300" className="breath-svg" aria-hidden="true">
+      <svg viewBox="0 0 240 300" className="breath-svg" aria-hidden="true">
         <defs>
-          <radialGradient id="bgAura" cx="50%" cy="46%" r="60%">
-            <stop offset="0%" stopColor="rgba(233,180,76,0.34)" />
-            <stop offset="55%" stopColor="rgba(233,180,76,0.10)" />
+          <radialGradient id="bdAura" cx="50%" cy="48%" r="58%">
+            <stop offset="0%" stopColor="rgba(233,180,76,0.28)" />
+            <stop offset="60%" stopColor="rgba(233,180,76,0.08)" />
             <stop offset="100%" stopColor="rgba(233,180,76,0)" />
           </radialGradient>
-          <linearGradient id="bgLung" x1="0" y1="1" x2="0" y2="0">
-            <stop offset="0%" stopColor="#57d6a6" />
-            <stop offset="100%" stopColor="#8fe9c6" />
+          <linearGradient id="bdSkin" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="rgba(240,201,138,0.26)" />
+            <stop offset="100%" stopColor="rgba(233,180,76,0.12)" />
           </linearGradient>
-          <linearGradient id="bgBelly" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="rgba(233,180,76,0.05)" />
-            <stop offset="100%" stopColor="rgba(233,180,76,0.22)" />
-          </linearGradient>
+          <radialGradient id="bdBreath" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="rgba(143,233,198,0.95)" />
+            <stop offset="55%" stopColor="rgba(87,214,166,0.45)" />
+            <stop offset="100%" stopColor="rgba(87,214,166,0)" />
+          </radialGradient>
         </defs>
 
         {/* aura que respira */}
-        <ellipse className="bg-aura" cx="110" cy="140" rx="96" ry="120" fill="url(#bgAura)" />
+        <ellipse className="bd-aura" cx="120" cy="150" rx="98" ry="120" fill="url(#bdAura)" />
 
         {/* fluxo de ar (entra no inspire, sai no solte) */}
-        <g className="bg-flow" stroke="#8fe9c6" strokeWidth="2.2" strokeLinecap="round" fill="none">
-          <path d="M110 8 C 104 24 116 34 110 52" strokeDasharray="5 9" />
-          <path d="M96 14 C 92 28 100 38 96 54" strokeDasharray="4 10" opacity="0.7" />
-          <path d="M124 14 C 128 28 120 38 124 54" strokeDasharray="4 10" opacity="0.7" />
+        <g className="bd-flow" stroke="rgba(143,233,198,0.9)" strokeWidth="2.2" strokeLinecap="round" fill="none">
+          <path d="M120 12 C 114 26 126 34 120 50" strokeDasharray="5 9" />
+          <path d="M107 18 C 103 30 111 38 107 52" strokeDasharray="4 10" opacity="0.65" />
+          <path d="M133 18 C 137 30 129 38 133 52" strokeDasharray="4 10" opacity="0.65" />
         </g>
 
-        {/* cabeça + pescoço (contexto de corpo, estático) */}
-        <g className="bg-frame" fill="none" stroke="rgba(233,180,76,0.55)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round">
-          <circle cx="110" cy="40" r="17" />
-          <path d="M100 55 L98 66 M120 55 L122 66" />
-          {/* tórax (estático) */}
-          <path d="M74 74 C74 66 146 66 146 74 C152 96 152 122 148 150 L72 150 C68 122 68 96 74 74 Z" />
+        {/* o corpo — sobe de leve no inspire */}
+        <g className="bd-body">
+          {/* luz da respiração dentro do tronco (sobe e enche) */}
+          <ellipse className="bd-breath" cx="120" cy="176" rx="46" ry="58" fill="url(#bdBreath)" />
+
+          {/* cabeça + pescoço */}
+          <ellipse cx="120" cy="50" rx="25" ry="29" fill="url(#bdSkin)" stroke="rgba(233,180,76,0.55)" strokeWidth="1.6" />
+          <path d="M107 74 C 112 84 128 84 133 74 L 135 92 L 105 92 Z" fill="url(#bdSkin)" stroke="rgba(233,180,76,0.4)" strokeWidth="1.4" strokeLinejoin="round" />
+
+          {/* tronco superior (ombros + peito) — abre discretamente */}
+          <path
+            className="bd-chest"
+            d="M106 90 C 88 92 74 104 66 126 C 60 148 62 172 68 196 L 172 196 C 178 172 180 148 174 126 C 166 104 152 92 134 90 Z"
+            fill="url(#bdSkin)"
+            stroke="rgba(233,180,76,0.5)"
+            strokeWidth="1.8"
+            strokeLinejoin="round"
+          />
+
+          {/* barriga — expande pra fora no inspire (a dica: barriga sai) */}
+          <path
+            className="bd-belly"
+            d="M68 196 C 66 222 70 250 78 284 L 162 284 C 170 250 174 222 172 196 Z"
+            fill="url(#bdSkin)"
+            stroke="rgba(233,180,76,0.5)"
+            strokeWidth="1.8"
+            strokeLinejoin="round"
+          />
         </g>
-
-        {/* barriga — expande pra fora no inspire (barriga sai) */}
-        <path
-          className="bg-belly-fill"
-          d="M72 150 L148 150 C154 178 150 202 136 220 L84 220 C70 202 66 178 72 150 Z"
-          fill="url(#bgBelly)"
-        />
-        <path
-          className="bg-belly"
-          d="M72 150 L148 150 C154 178 150 202 136 220 L84 220 C70 202 66 178 72 150 Z"
-          fill="none"
-          stroke="rgba(233,180,76,0.6)"
-          strokeWidth="2"
-          strokeLinejoin="round"
-        />
-
-        {/* pulmões: contorno + enchimento que sobe com --b */}
-        <g className="bg-lungs">
-          <path className="bg-lung-out" d="M104 78 C104 74 94 72 88 78 C78 88 76 112 80 132 C82 142 98 144 102 134 C106 124 106 96 104 78 Z" fill="none" stroke="rgba(143,233,198,0.5)" strokeWidth="1.6" />
-          <path className="bg-lung-out" d="M116 78 C116 74 126 72 132 78 C142 88 144 112 140 132 C138 142 122 144 118 134 C114 124 114 96 116 78 Z" fill="none" stroke="rgba(143,233,198,0.5)" strokeWidth="1.6" />
-          <g className="bg-lung-fill">
-            <path d="M104 78 C104 74 94 72 88 78 C78 88 76 112 80 132 C82 142 98 144 102 134 C106 124 106 96 104 78 Z" fill="url(#bgLung)" />
-            <path d="M116 78 C116 74 126 72 132 78 C142 88 144 112 140 132 C138 142 122 144 118 134 C114 124 114 96 116 78 Z" fill="url(#bgLung)" />
-          </g>
-          {/* traqueia */}
-          <path d="M110 58 L110 80" stroke="rgba(143,233,198,0.5)" strokeWidth="1.6" fill="none" />
-        </g>
-
-        {/* DIAFRAGMA — a estrela: desce e achata no inspire */}
-        <path className="bg-diaphragm" d="M70 146 Q110 128 150 146" fill="none" stroke="#e9b44c" strokeWidth="3.4" strokeLinecap="round" />
-        <path className="bg-diaphragm bg-diaphragm-ghost" d="M70 146 Q110 128 150 146" fill="none" stroke="rgba(233,180,76,0.25)" strokeWidth="8" strokeLinecap="round" />
       </svg>
 
       <div className="breath-label">
