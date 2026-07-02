@@ -12,6 +12,7 @@ const K = {
   sessions: 'canto.sessions.v1',
   seenOnboarding: 'canto.seenOnboarding.v1',
   achievements: 'canto.achievements.v1',
+  reviewsDone: 'canto.reviewsDone.v1',
 }
 
 /** Conquista desbloqueada, com o momento em que caiu (para "novo!" na UI). */
@@ -126,9 +127,22 @@ export function mergeServerSessions(server: SessionRecord[]): void {
   write(K.sessions, merged)
 }
 
+// ---------- Revisões de unidade concluídas (troféu do path) ----------
+// Local-only por ora (não sincroniza com o backend — é um marco de UI; a
+// prática em si já é gravada como sessões normais e segue o usuário).
+export const getReviewsDone = (): string[] => read<string[]>(K.reviewsDone, [])
+export const isReviewDone = (unitId: string): boolean => getReviewsDone().includes(unitId)
+export function markReviewDone(unitId: string): void {
+  const cur = getReviewsDone()
+  if (!cur.includes(unitId)) {
+    cur.push(unitId)
+    write(K.reviewsDone, cur)
+  }
+}
+
 /** Limpa os dados locais do usuário (usar no logout, para não vazar entre contas). */
 export function clearUserData(): void {
-  for (const k of [K.sessions, K.baseline, K.rangeHistory, K.achievements, K.seenOnboarding, K.profile]) {
+  for (const k of [K.sessions, K.baseline, K.rangeHistory, K.achievements, K.seenOnboarding, K.profile, K.reviewsDone]) {
     try {
       localStorage.removeItem(k)
     } catch {

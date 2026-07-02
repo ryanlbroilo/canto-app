@@ -921,3 +921,77 @@
   font-size: 12px;
   color: var(--muted);
 }
+
+/* ============================================================
+   Revisão espaçada (card) + review runner (progresso da fila)
+   ============================================================ */
+.rev-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 16px;
+  padding: 14px 16px;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid rgba(233, 180, 76, 0.35);
+  background: linear-gradient(180deg, rgba(233, 180, 76, 0.07), var(--panel));
+  transition: transform 140ms var(--ease), box-shadow 140ms var(--ease);
+}
+.rev-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-1);
+}
+.rev-card-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 12px;
+  color: var(--gold-2);
+  background: rgba(233, 180, 76, 0.12);
+  border: 1px solid var(--hairline);
+}
+.rev-card-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15.5px;
+  color: var(--text);
+}
+.rev-card-sub {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* troféu de revisão vira link — mantém sem sublinhado e com hover suave */
+.trk-review {
+  text-decoration: none;
+  color: inherit;
+}
+.trk-review:hover .trk-review-card {
+  border-style: solid;
+  border-color: rgba(233, 180, 76, 0.5);
+}
+
+/* progresso da fila no review runner */
+.rev-track {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin: 4px 0 16px;
+}
+.rev-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  transition: background 200ms var(--ease), box-shadow 200ms var(--ease);
+}
+.rev-dot[data-state='done'] {
+  background: var(--gold);
+}
+.rev-dot[data-state='now'] {
+  background: var(--gold-2);
+  box-shadow: 0 0 0 4px rgba(233, 180, 76, 0.18);
+}

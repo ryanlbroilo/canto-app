@@ -8,6 +8,8 @@ import {
 } from './types'
 import { getExercise, pickExercise, PickCriteria } from './exercises'
 import { nextInTrack, trackForLevel } from './tracks'
+import { unitForExercise } from './curriculum'
+import { dueForReview } from './review'
 
 // O ROTEADOR ADAPTATIVO — o coração do "trilhar pela quebra / passaggio".
 // Ancorado no FeatureReport da última sessão, decide o próximo exercício em
@@ -26,6 +28,14 @@ interface RecommendArgs {
   skills: SkillProgress[]
   baseline: VocalBaseline | null
   completedIds: Set<string>
+  /** melhor pontuação + contagem por exercício (para revisão espaçada) */
+  exercisesDone?: Record<string, { count: number; bestScore: number }>
+}
+
+/** Acrescenta o nome da unidade ao motivo, quando o exercício está no path. */
+function withUnit(id: string, reason: string): string {
+  const u = unitForExercise(id)
+  return u ? `${reason} (unidade “${u.title}”)` : reason
 }
 
 /** Nível de trilha sugerido a partir do progresso (heurística simples). */
@@ -145,15 +155,32 @@ export function recommendNext(args: RecommendArgs): AdaptiveRecommendation | nul
     )
   }
 
+  // (4.5) Repetição espaçada: um exercício já aprendido está "esquecido" há
+  // vários dias → nudge de revisar (fixa retenção, estilo Duolingo).
+  const due = args.exercisesDone ? dueForReview(args.sessions, args.exercisesDone) : []
+  const stale = due.find((d) => d.daysSince >= 5)
+  const staleEx = stale ? getExercise(stale.id) : undefined
+  if (stale && staleEx) {
+    return rec(
+      stale.id,
+      withUnit(
+        stale.id,
+        `Faz ${Math.round(stale.daysSince)} dias que você não treina “${staleEx.name}”. Uma revisão rápida fixa o que já aprendeu.`,
+      ),
+      'revisão',
+    )
+  }
+
   // (5) Indo muito bem (acerto alto e nenhuma quebra) → evoluir na trilha.
   if (p.notesHitPct >= 85 && breaks === 0) {
     const next = nextInTrack(level, args.completedIds)
     if (next) {
       return rec(
         next,
-        `Sessão afiada: ${Math.round(
-          p.notesHitPct,
-        )}% de acerto e zero quebras. Você está pronto pro próximo passo da trilha.`,
+        withUnit(
+          next,
+          `Sessão afiada: ${Math.round(p.notesHitPct)}% de acerto e zero quebras. Você está pronto pro próximo passo do caminho.`,
+        ),
         'evoluir',
       )
     }
@@ -170,11 +197,11 @@ export function recommendNext(args: RecommendArgs): AdaptiveRecommendation | nul
     }
   }
 
-  // (6) Fallback neutro: continuar a trilha do nível apropriado.
+  // (6) Fallback neutro: continuar o caminho do nível apropriado.
   const next = nextInTrack(level, args.completedIds) ?? trackForLevel(level).exerciseIds[0]
   return rec(
     next,
-    'Bom treino. Vamos seguir firmes no próximo passo da sua trilha.',
+    withUnit(next, 'Bom treino. Vamos seguir firmes no próximo passo do seu caminho.'),
     'continuar',
   )
 }

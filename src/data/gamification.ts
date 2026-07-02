@@ -89,6 +89,7 @@ export function computeGamification(args: ComputeArgs): GamificationState {
     skills,
     baseline,
     completedIds,
+    exercisesDone,
   })
 
   // --- Conquistas elegíveis ---

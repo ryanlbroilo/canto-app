@@ -73,22 +73,49 @@ export default function ExercisePlayer() {
       </div>
 
       <div className="card card--glow">
-        {/* key={ex.id}: ao ir pro próximo exercício adaptativo (mesma rota, id novo),
-            o player remonta limpo em 'ready' em vez de manter o estado 'done'. */}
-        {ex.kind === 'breathing' ? (
-          <Breathing key={ex.id} ex={ex} onFinish={finish} onExit={() => navigate('/exercicios')} />
-        ) : ex.kind === 'siren' ? (
-          <Siren key={ex.id} engine={engine} ex={ex} onFinish={finish} onExit={() => navigate('/exercicios')} />
-        ) : (
-          <Sequence key={ex.id} engine={engine} ex={ex} baseline={baseline} onFinish={finish} onExit={() => navigate('/exercicios')} />
-        )}
+        <ExerciseRunner ex={ex} engine={engine} baseline={baseline} onFinish={finish} onExit={() => navigate('/exercicios')} />
       </div>
     </div>
   )
 }
 
+// Contexto de revisão: quando presente, o Result vira "Próximo (i/n)" em vez do
+// fluxo normal (repetir / próximo passo adaptativo).
+export interface ReviewCtx {
+  index: number
+  total: number
+  onNext: () => void
+}
+
+type FinishFn = (h: number, d: number, s: number, report?: FeatureReport) => void
+
+/**
+ * Renderiza UM exercício (qualquer kind) com onFinish/onExit — reutilizado pelo
+ * player normal e pelo review runner (fila de revisão). key={ex.id} remonta
+ * limpo ao trocar de exercício.
+ */
+export function ExerciseRunner({
+  ex,
+  engine,
+  baseline,
+  onFinish,
+  onExit,
+  review,
+}: {
+  ex: Exercise
+  engine: PitchEngine
+  baseline: VocalBaseline | null
+  onFinish: FinishFn
+  onExit: () => void
+  review?: ReviewCtx
+}) {
+  if (ex.kind === 'breathing') return <Breathing key={ex.id} ex={ex} onFinish={onFinish} onExit={onExit} review={review} />
+  if (ex.kind === 'siren') return <Siren key={ex.id} engine={engine} ex={ex} onFinish={onFinish} onExit={onExit} review={review} />
+  return <Sequence key={ex.id} engine={engine} ex={ex} baseline={baseline} onFinish={onFinish} onExit={onExit} review={review} />
+}
+
 /* ---------------- Respiração ---------------- */
-function Breathing({ ex, onFinish, onExit }: { ex: Exercise; onFinish: (h: number, d: number, s: number, report?: FeatureReport) => void; onExit: () => void }) {
+function Breathing({ ex, onFinish, onExit, review }: { ex: Exercise; onFinish: FinishFn; onExit: () => void; review?: ReviewCtx }) {
   const total = ex.durationMin * 60
   const [started, setStarted] = useState(false)
   const [done, setDone] = useState(false)
@@ -110,7 +137,7 @@ function Breathing({ ex, onFinish, onExit }: { ex: Exercise; onFinish: (h: numbe
   }, [started, done])
 
   if (done) {
-    return <Result title="Respiração concluída" score={null} note="Respiração é a base de tudo — apoio e afinação mais estáveis. 👏" onRepeat={() => { setStarted(false); setDone(false); setClock(0) }} onExit={onExit} />
+    return <Result title="Respiração concluída" score={null} note="Respiração é a base de tudo — apoio e afinação mais estáveis. 👏" onRepeat={() => { setStarted(false); setDone(false); setClock(0) }} onExit={onExit} review={review} />
   }
 
   return (
@@ -138,7 +165,7 @@ function Breathing({ ex, onFinish, onExit }: { ex: Exercise; onFinish: (h: numbe
 }
 
 /* ---------------- Sirene ---------------- */
-function Siren({ engine, ex, onFinish, onExit }: { engine: PitchEngine; ex: Exercise; onFinish: (h: number, d: number, s: number, report?: FeatureReport) => void; onExit: () => void }) {
+function Siren({ engine, ex, onFinish, onExit, review }: { engine: PitchEngine; ex: Exercise; onFinish: FinishFn; onExit: () => void; review?: ReviewCtx }) {
   const total = ex.durationMin * 60
   const [phase, setPhase] = useState<'ready' | 'run' | 'done'>('ready')
   const [clock, setClock] = useState(0)
@@ -199,6 +226,7 @@ function Siren({ engine, ex, onFinish, onExit }: { engine: PitchEngine; ex: Exer
         report={reportRef.current ?? undefined}
         onRepeat={() => setPhase('ready')}
         onExit={onExit}
+        review={review}
       />
     )
   }
@@ -243,12 +271,14 @@ function Sequence({
   baseline,
   onFinish,
   onExit,
+  review,
 }: {
   engine: PitchEngine
   ex: Exercise
   baseline: VocalBaseline | null
-  onFinish: (h: number, d: number, s: number, report?: FeatureReport) => void
+  onFinish: FinishFn
   onExit: () => void
+  review?: ReviewCtx
 }) {
   const pattern = ex.pattern ?? [0]
   const holdSec = ex.holdSec ?? 2
@@ -383,6 +413,7 @@ function Sequence({
         report={result.report}
         onRepeat={() => { setResult(null); setPhase('ready') }}
         onExit={onExit}
+        review={review}
       />
     )
   }
@@ -429,6 +460,7 @@ function Result({
   report,
   onRepeat,
   onExit,
+  review,
 }: {
   title: string
   score: number | null
@@ -436,7 +468,9 @@ function Result({
   report?: FeatureReport
   onRepeat: () => void
   onExit: () => void
+  review?: ReviewCtx
 }) {
+  const isLast = review ? review.index + 1 >= review.total : false
   return (
     <div className="player">
       <div className="player-step">{title}</div>
@@ -454,16 +488,31 @@ function Result({
           <SessionSummary report={report} />
         </div>
       )}
-      {/* Fecha o loop adaptativo: o próximo passo recomendado logo abaixo do resumo. */}
-      <NextExercise />
-      <div className="controls" style={{ justifyContent: 'center' }}>
-        <button className="btn btn--primary" onClick={onRepeat}>
-          Repetir
-        </button>
-        <button className="btn" onClick={onExit}>
-          Voltar aos exercícios
-        </button>
-      </div>
+
+      {review ? (
+        // Modo revisão: avança na fila (sem o próximo-passo adaptativo).
+        <div className="controls" style={{ justifyContent: 'center' }}>
+          <button className="btn btn--primary" onClick={review.onNext}>
+            <Icon name={isLast ? 'trophy' : 'play'} /> {isLast ? 'Concluir revisão' : `Próximo · ${review.index + 2}/${review.total}`}
+          </button>
+          <button className="btn btn--ghost" onClick={onExit}>
+            Sair da revisão
+          </button>
+        </div>
+      ) : (
+        <>
+          {/* Fecha o loop adaptativo: o próximo passo recomendado logo abaixo do resumo. */}
+          <NextExercise />
+          <div className="controls" style={{ justifyContent: 'center' }}>
+            <button className="btn btn--primary" onClick={onRepeat}>
+              Repetir
+            </button>
+            <button className="btn" onClick={onExit}>
+              Voltar aos exercícios
+            </button>
+          </div>
+        </>
+      )}
     </div>
   )
 }

@@ -10,6 +10,7 @@ import Practice from './pages/Practice'
 import RangeTest from './pages/RangeTest'
 import Exercises from './pages/Exercises'
 import ExercisePlayer from './pages/ExercisePlayer'
+import ReviewRunner from './pages/ReviewRunner'
 import Progress from './pages/Progress'
 import Team from './pages/Team'
 import Coach from './pages/Coach'
@@ -46,6 +47,8 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/range" element={<RangeTest />} />
             <Route path="/exercicios" element={<Exercises />} />
             <Route path="/exercicios/:id" element={<ExercisePlayer />} />
+            <Route path="/revisao/unidade/:unitId" element={<ReviewRunner mode="unit" />} />
+            <Route path="/revisao/espacada" element={<ReviewRunner mode="spaced" />} />
             <Route path="/progresso" element={<Progress />} />
             <Route path="/time" element={<Team />} />
             <Route path="/eva" element={<Coach />} />

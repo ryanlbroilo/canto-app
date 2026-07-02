@@ -4,6 +4,8 @@ import '../styles/exercises.css'
 import { getExercise, EXERCISES, EXERCISE_COUNT } from '../data/exercises'
 import { TRACKS, trackForLevel } from '../data/tracks'
 import { unitsForLevel } from '../data/curriculum'
+import { spacedReviewQueue } from '../data/review'
+import { isReviewDone } from '../data/store'
 import { SKILL_BY_ID, SKILLS } from '../data/skills'
 import { CurriculumUnit, Exercise, ExerciseKind, ExercisePhase, SkillId, TrackLevel } from '../data/types'
 import { useApp } from '../app/AppContext'
@@ -38,10 +40,13 @@ function stateFor(done: { count: number; bestScore: number } | undefined): Exclu
 }
 
 export default function Exercises() {
-  const { gamification } = useApp()
+  const { gamification, sessions } = useApp()
   const done = gamification.exercisesDone
   const reco = gamification.recommendation
   const [view, setView] = useState<'trilha' | 'biblioteca'>('trilha')
+
+  // Revisão espaçada disponível hoje (exercícios "devidos" de dias anteriores).
+  const dueCount = useMemo(() => spacedReviewQueue(sessions, done).length, [sessions, done])
 
   // Descobre o nível "atual" do cantor: a primeira trilha que ainda não está
   // 100% dominada. Serve de aba inicial e de foco do resumo.
@@ -114,6 +119,18 @@ export default function Exercises() {
         unitsDone={unitsDone}
         unitsTotal={units.length}
       />
+
+      {/* Revisão espaçada do dia (repetição espaçada estilo Duolingo) */}
+      {dueCount >= 3 && (
+        <Link to="/revisao/espacada" className="card rev-card reveal">
+          <span className="rev-card-icon"><Icon name="flame" size={20} /></span>
+          <div className="grow">
+            <div className="rev-card-title">Revisão do dia</div>
+            <div className="rev-card-sub">{dueCount} exercícios prontos para revisar — volte ao que já aprendeu e fixe de verdade.</div>
+          </div>
+          <Icon name="chevron" size={18} />
+        </Link>
+      )}
 
       {/* Abas de nível (seções) */}
       <div className="trk-tabs" role="tablist" aria-label="Nível do caminho">
@@ -253,16 +270,16 @@ function UnitBlock({
             />
           )
         })}
-        <ReviewNode complete={unitComplete} title={unit.title} side={exercises.length % 2 === 0 ? 'left' : 'right'} />
+        <ReviewNode unitId={unit.id} complete={isReviewDone(unit.id)} title={unit.title} side={exercises.length % 2 === 0 ? 'left' : 'right'} />
       </div>
     </section>
   )
 }
 
-/* ---------------- Nó de revisão (troféu de fim de unidade) ---------------- */
-function ReviewNode({ complete, title, side }: { complete: boolean; title: string; side: 'left' | 'right' }) {
+/* ---------------- Nó de revisão (troféu de fim de unidade, clicável) ---------------- */
+function ReviewNode({ unitId, complete, title, side }: { unitId: string; complete: boolean; title: string; side: 'left' | 'right' }) {
   return (
-    <div className="trk-stop trk-review" data-side={side} data-complete={complete}>
+    <Link to={`/revisao/unidade/${unitId}`} className="trk-stop trk-review" data-side={side} data-complete={complete}>
       <div className="trk-rail">
         <div className="trk-node" data-state={complete ? 'mastered' : 'locked'}>
           <Icon name="trophy" size={20} />
@@ -273,10 +290,10 @@ function ReviewNode({ complete, title, side }: { complete: boolean; title: strin
           <Icon name="trophy" size={14} /> Revisão · {title}
         </div>
         <div className="trk-review-sub">
-          {complete ? 'Unidade conquistada! Troféu dourado.' : 'Domine todos os nós desta unidade para conquistar o troféu.'}
+          {complete ? 'Unidade revisada! Troféu dourado — refaça quando quiser.' : 'Faça a revisão da unidade: repassa os pontos mais fracos e conquista o troféu.'}
         </div>
       </div>
-    </div>
+    </Link>
   )
 }
 
