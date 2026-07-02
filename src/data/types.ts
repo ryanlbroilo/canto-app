@@ -89,6 +89,22 @@ export interface LearningTrack {
   exerciseIds: string[]
 }
 
+// ---- Currículo por UNIDADES (path longo estilo Duolingo) ----
+// Cada nível (= "seção") é uma sequência de unidades temáticas; cada unidade
+// é um grupo ordenado de exercícios (nós-lição). A UI insere um nó de "revisão"
+// ao fim de cada unidade. Todos os ~300 exercícios vivem no path.
+export interface CurriculumUnit {
+  /** slug estável, ex.: 'ini-u1' */
+  id: string
+  level: TrackLevel
+  /** ordem 1-based dentro do nível */
+  index: number
+  title: string
+  subtitle: string
+  /** exercícios da unidade, na ordem em que o aluno faz */
+  exerciseIds: string[]
+}
+
 // ---- Conquistas ----
 export interface Achievement {
   id: string

@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom'
 import '../styles/exercises.css'
 import { getExercise, EXERCISES, EXERCISE_COUNT } from '../data/exercises'
 import { TRACKS, trackForLevel } from '../data/tracks'
+import { unitsForLevel } from '../data/curriculum'
 import { SKILL_BY_ID, SKILLS } from '../data/skills'
-import { Exercise, ExerciseKind, ExercisePhase, SkillId, TrackLevel } from '../data/types'
+import { CurriculumUnit, Exercise, ExerciseKind, ExercisePhase, SkillId, TrackLevel } from '../data/types'
 import { useApp } from '../app/AppContext'
 import { Icon, IconName } from '../components/ui/Icon'
 
@@ -58,20 +59,22 @@ export default function Exercises() {
   useEffect(() => setLevel(currentLevel), [currentLevel])
   const track = trackForLevel(level)
 
-  // Exercícios da trilha ativa, na ORDEM do currículo (é o caminho).
-  const stops = useMemo(
-    () => track.exerciseIds.map((id) => getExercise(id)).filter((e): e is Exercise => Boolean(e)),
-    [track],
-  )
+  const isMastered = (id: string) => (done[id]?.bestScore ?? 0) >= MASTERY
 
-  // Progresso da trilha ativa: quantos dominados / total.
-  const masteredCount = stops.filter((e) => (done[e.id]?.bestScore ?? 0) >= MASTERY).length
-  const trackPct = stops.length ? Math.round((masteredCount / stops.length) * 100) : 0
+  // Unidades do nível ativo (o path completo, agrupado estilo Duolingo).
+  const units = useMemo(() => unitsForLevel(level), [level])
 
-  // O "próximo recomendado" do caminho: o exercício apontado pelo roteador se ele
-  // estiver nesta trilha; senão, o primeiro nó ainda não dominado.
-  const recoInTrack = reco && stops.some((e) => e.id === reco.exerciseId) ? reco.exerciseId : null
-  const firstUndone = stops.find((e) => (done[e.id]?.bestScore ?? 0) < MASTERY)?.id ?? null
+  // Progresso do nível: exercícios dominados / total e unidades concluídas.
+  const totalEx = track.exerciseIds.length
+  const masteredCount = track.exerciseIds.filter(isMastered).length
+  const trackPct = totalEx ? Math.round((masteredCount / totalEx) * 100) : 0
+  const unitsDone = units.filter((u) => u.exerciseIds.length > 0 && u.exerciseIds.every(isMastered)).length
+  // Índice da unidade "ativa": a primeira que ainda não está 100% dominada.
+  const activeUnitIdx = units.findIndex((u) => !u.exerciseIds.every(isMastered))
+
+  // O "próximo" nó: recomendação da EVA se estiver neste nível; senão o 1º não dominado.
+  const recoInTrack = reco && track.exerciseIds.includes(reco.exerciseId) ? reco.exerciseId : null
+  const firstUndone = track.exerciseIds.find((id) => !isMastered(id)) ?? null
   const nextId = recoInTrack ?? firstUndone
 
   return (
@@ -80,16 +83,17 @@ export default function Exercises() {
         <div>
           <h1 className="page-title">Exercícios</h1>
           <p className="page-sub">
-            Uma trilha curada te guia passo a passo — e uma biblioteca de {EXERCISE_COUNT} exercícios te deixa treinar
-            exatamente o que quiser. Cada um dá feedback de afinação em tempo real e registra sua melhor pontuação.
+            Um caminho de {units.length ? 'dezenas de' : ''} unidades te guia do primeiro fôlego ao clímax do louvor — e
+            a biblioteca de {EXERCISE_COUNT} exercícios é seu campo de treino livre. Cada nó dá feedback de afinação em
+            tempo real e guarda sua melhor pontuação.
           </p>
         </div>
       </div>
 
-      {/* Alternador: caminho curado ↔ biblioteca completa */}
+      {/* Alternador: caminho ↔ biblioteca completa */}
       <div className="ex-switch" role="tablist" aria-label="Modo de visualização">
         <button role="tab" aria-selected={view === 'trilha'} data-active={view === 'trilha'} onClick={() => setView('trilha')}>
-          <Icon name="route" size={15} /> Trilha
+          <Icon name="route" size={15} /> Caminho
         </button>
         <button role="tab" aria-selected={view === 'biblioteca'} data-active={view === 'biblioteca'} onClick={() => setView('biblioteca')}>
           <Icon name="dumbbell" size={15} /> Biblioteca · {EXERCISE_COUNT}
@@ -100,15 +104,24 @@ export default function Exercises() {
 
       {view === 'trilha' && (
       <>
-      {/* Resumo geral: nível atual + progresso da trilha ativa */}
-      <SummaryCard level={currentLevel} activeLevel={level} pct={trackPct} mastered={masteredCount} total={stops.length} />
+      {/* Resumo geral: nível atual + progresso do caminho */}
+      <SummaryCard
+        level={currentLevel}
+        activeLevel={level}
+        pct={trackPct}
+        mastered={masteredCount}
+        total={totalEx}
+        unitsDone={unitsDone}
+        unitsTotal={units.length}
+      />
 
-      {/* Abas de nível */}
-      <div className="trk-tabs" role="tablist" aria-label="Nível da trilha">
+      {/* Abas de nível (seções) */}
+      <div className="trk-tabs" role="tablist" aria-label="Nível do caminho">
         {LEVELS.map(({ level: lv, label, icon }) => {
+          const uns = unitsForLevel(lv)
           const t = trackForLevel(lv)
-          const m = t.exerciseIds.filter((id) => (done[id]?.bestScore ?? 0) >= MASTERY).length
-          const complete = m === t.exerciseIds.length && t.exerciseIds.length > 0
+          const ud = uns.filter((u) => u.exerciseIds.length > 0 && u.exerciseIds.every(isMastered)).length
+          const complete = ud === uns.length && uns.length > 0
           return (
             <button
               key={lv}
@@ -125,13 +138,13 @@ export default function Exercises() {
                 <span className="trk-tab-title">
                   {label}
                   {complete && (
-                    <span className="trk-tab-done" title="Trilha dominada">
+                    <span className="trk-tab-done" title="Nível dominado">
                       <Icon name="crown" size={13} />
                     </span>
                   )}
                 </span>
                 <span className="trk-tab-meta">
-                  {m}/{t.exerciseIds.length} dominados
+                  {ud}/{uns.length} unidades · {t.exerciseIds.length} nós
                 </span>
               </span>
             </button>
@@ -139,7 +152,7 @@ export default function Exercises() {
         })}
       </div>
 
-      {/* Cabeçalho da trilha ativa */}
+      {/* Cabeçalho do nível ativo */}
       <div className="trk-head reveal">
         <div>
           <div className="trk-head-name">{track.name}</div>
@@ -147,7 +160,7 @@ export default function Exercises() {
         </div>
         <div className="trk-head-prog">
           <div className="trk-head-prog-num">
-            <b>{masteredCount}</b> de {stops.length} dominados
+            <b>{unitsDone}</b> de {units.length} unidades
           </div>
           <div className="bar" aria-hidden="true">
             <div className="bar-fill" style={{ width: `${trackPct}%` }} />
@@ -155,14 +168,73 @@ export default function Exercises() {
         </div>
       </div>
 
-      {/* O CAMINHO serpenteante */}
-      <div className="trk-path">
-        {stops.map((ex, i) => {
+      {/* O CAMINHO: unidades temáticas em sequência */}
+      {units.map((unit, ui) => (
+        <UnitBlock
+          key={unit.id}
+          unit={unit}
+          state={ui < activeUnitIdx || activeUnitIdx === -1 ? 'done' : ui === activeUnitIdx ? 'active' : 'upcoming'}
+          done={done}
+          nextId={nextId}
+          recoId={recoInTrack}
+          reco={reco}
+        />
+      ))}
+
+      <div className="trk-foot reveal">
+        <Icon name="route" size={18} />
+        <span>
+          O caminho é um guia, não uma corrente — você pode praticar qualquer exercício a qualquer momento. Dominar
+          (pontuação ≥ {MASTERY}) acende o dourado; completar todos os nós de uma unidade conquista o troféu dela.
+        </span>
+      </div>
+      </>
+      )}
+    </div>
+  )
+}
+
+/* ---------------- Uma UNIDADE do caminho (cabeçalho + nós + revisão) ---------------- */
+function UnitBlock({
+  unit,
+  state,
+  done,
+  nextId,
+  recoId,
+  reco,
+}: {
+  unit: CurriculumUnit
+  state: 'done' | 'active' | 'upcoming'
+  done: Record<string, { count: number; bestScore: number }>
+  nextId: string | null
+  recoId: string | null
+  reco: { exerciseId: string; reason: string; tag: string } | null
+}) {
+  const exercises = unit.exerciseIds.map((id) => getExercise(id)).filter((e): e is Exercise => Boolean(e))
+  const masteredInUnit = exercises.filter((e) => (done[e.id]?.bestScore ?? 0) >= MASTERY).length
+  const unitComplete = exercises.length > 0 && masteredInUnit === exercises.length
+
+  return (
+    <section className="unit reveal" data-state={state}>
+      <div className="unit-head">
+        <span className="unit-badge" data-complete={unitComplete}>
+          {unitComplete ? <Icon name="crown" size={16} /> : unit.index}
+        </span>
+        <div className="unit-id">
+          <div className="unit-title">{unit.title}</div>
+          <div className="unit-sub">{unit.subtitle}</div>
+        </div>
+        <span className="unit-prog" title={`${masteredInUnit} de ${exercises.length} dominados`}>
+          {masteredInUnit}/{exercises.length}
+        </span>
+      </div>
+
+      <div className="trk-path unit-path">
+        {exercises.map((ex, i) => {
           const d = done[ex.id]
           const base = stateFor(d)
           const isNext = ex.id === nextId
-          const isReco = ex.id === recoInTrack
-          // estado visual do nó (o "próximo" ganha o pulso, salvo se já dominado)
+          const isReco = ex.id === recoId
           const nodeState: MasteryState =
             base === 'mastered' ? 'mastered' : isNext ? 'next' : base === 'practiced' ? 'practiced' : 'locked'
           return (
@@ -181,17 +253,29 @@ export default function Exercises() {
             />
           )
         })}
+        <ReviewNode complete={unitComplete} title={unit.title} side={exercises.length % 2 === 0 ? 'left' : 'right'} />
+      </div>
+    </section>
+  )
+}
 
-        <div className="trk-foot reveal">
-          <Icon name="route" size={18} />
-          <span>
-            O caminho é um guia, não uma corrente — você pode praticar qualquer exercício a qualquer momento. Dominar
-            (pontuação ≥ {MASTERY}) acende o dourado e abre a próxima parada.
-          </span>
+/* ---------------- Nó de revisão (troféu de fim de unidade) ---------------- */
+function ReviewNode({ complete, title, side }: { complete: boolean; title: string; side: 'left' | 'right' }) {
+  return (
+    <div className="trk-stop trk-review" data-side={side} data-complete={complete}>
+      <div className="trk-rail">
+        <div className="trk-node" data-state={complete ? 'mastered' : 'locked'}>
+          <Icon name="trophy" size={20} />
         </div>
       </div>
-      </>
-      )}
+      <div className="trk-review-card">
+        <div className="trk-review-title">
+          <Icon name="trophy" size={14} /> Revisão · {title}
+        </div>
+        <div className="trk-review-sub">
+          {complete ? 'Unidade conquistada! Troféu dourado.' : 'Domine todos os nós desta unidade para conquistar o troféu.'}
+        </div>
+      </div>
     </div>
   )
 }
@@ -203,12 +287,16 @@ function SummaryCard({
   pct,
   mastered,
   total,
+  unitsDone,
+  unitsTotal,
 }: {
   level: TrackLevel
   activeLevel: TrackLevel
   pct: number
   mastered: number
   total: number
+  unitsDone: number
+  unitsTotal: number
 }) {
   const R = 44
   const C = 2 * Math.PI * R
@@ -220,13 +308,13 @@ function SummaryCard({
     <div className="card card--glow trk-summary reveal">
       <div>
         <div className="trk-summary-eyebrow">Sua jornada · nível {currentLabel.toLowerCase()}</div>
-        <div className="trk-summary-title">Trilha {levelLabel}</div>
+        <div className="trk-summary-title">Nível {levelLabel}</div>
         <p className="trk-summary-sub">
           {total === 0
-            ? 'Sua trilha está prontinha para começar. O primeiro nó já está aceso — dê o play.'
+            ? 'Seu caminho está prontinho para começar. O primeiro nó já está aceso — dê o play.'
             : mastered === total
-              ? 'Trilha inteira dominada. Suba de nível ou volte para lapidar a pontuação.'
-              : `Você já dominou ${mastered} de ${total} exercícios desta trilha. Continue de onde parou.`}
+              ? 'Nível inteiro dominado. Suba de nível ou volte para lapidar a pontuação.'
+              : `${unitsDone} de ${unitsTotal} unidades conquistadas · ${mastered} de ${total} nós dominados. Continue de onde parou.`}
         </p>
       </div>
 
@@ -252,7 +340,7 @@ function SummaryCard({
         </svg>
         <div className="trk-summary-ring-label">
           <div className="trk-summary-ring-pct">{pct}%</div>
-          <div className="trk-summary-ring-cap">da trilha</div>
+          <div className="trk-summary-ring-cap">do nível</div>
         </div>
       </div>
     </div>

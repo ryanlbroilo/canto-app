@@ -1,11 +1,10 @@
 import { LearningTrack, TrackLevel } from './types'
-import { curatedTrackIds } from './exercises'
+import { levelExerciseIds } from './curriculum'
 
-// Trilhas de aprendizado: o "caminho" curado de cada nível, seguindo o arco
-// aquecimento → técnica → aplicação (estilo Duolingo). Os ids são DERIVADOS da
-// biblioteca completa (exercises.ts → curatedTrackIds), então a trilha continua
-// enxuta mesmo com ~300 exercícios no catálogo. O roteador adaptativo
-// (adaptive.ts) usa nextInTrack para sugerir o próximo passo.
+// Trilhas de aprendizado (uma por nível/"seção"). O caminho de cada nível é o
+// CURRÍCULO completo por unidades (curriculum.ts): dezenas de unidades temáticas
+// cobrindo os ~300 exercícios — não mais uma espinha curta. `exerciseIds` é o
+// path plano ordenado (usado pelo roteador adaptativo nextInTrack).
 const META: { id: string; level: TrackLevel; name: string; hint: string }[] = [
   {
     id: 'trilha-iniciante',
@@ -29,7 +28,7 @@ const META: { id: string; level: TrackLevel; name: string; hint: string }[] = [
 
 export const TRACKS: LearningTrack[] = META.map((m) => ({
   ...m,
-  exerciseIds: curatedTrackIds(m.level),
+  exerciseIds: levelExerciseIds(m.level),
 }))
 
 export const trackForLevel = (level: TrackLevel): LearningTrack =>
@@ -38,7 +37,7 @@ export const trackForLevel = (level: TrackLevel): LearningTrack =>
 /**
  * Primeiro exercício da trilha do nível que ainda não foi "dominado".
  * completedIds = ids que o cantor já dominou (ex.: bestScore ≥ 90).
- * Retorna null se toda a trilha do nível já foi dominada.
+ * Retorna null se todo o caminho do nível já foi dominado.
  */
 export function nextInTrack(level: TrackLevel, completedIds: Set<string>): string | null {
   const track = trackForLevel(level)
