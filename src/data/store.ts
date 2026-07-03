@@ -210,8 +210,11 @@ function computeRuns(sortedDays: string[]): { current: number; longest: number }
   return { current, longest }
 }
 function shiftDay(day: string, delta: number): string {
-  const d = new Date(day + 'T00:00:00')
-  d.setDate(d.getDate() + delta)
+  // UTC de ponta a ponta: as chaves de dia vêm de dateISO.slice(0,10) (UTC), então
+  // o shift também precisa ser UTC — senão em fusos UTC-positivos a ofensiva conta
+  // dia sim, dia não (parse local + chave UTC divergem).
+  const d = new Date(day + 'T00:00:00Z')
+  d.setUTCDate(d.getUTCDate() + delta)
   return d.toISOString().slice(0, 10)
 }
 
