@@ -360,6 +360,9 @@ export default function Dashboard() {
                 </div>
               ))}
             </div>
+            <Link to="/comunidade" className="dsh-link" style={{ marginTop: 12, display: 'inline-flex' }}>
+              ver a liga do ministério <Icon name="chevron" size={14} />
+            </Link>
           </div>
 
           {/* Range */}

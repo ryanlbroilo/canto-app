@@ -19,6 +19,8 @@ import { SessionSummary } from '../components/audio/SessionSummary'
 import { freqToMidiFloat, midiLabel } from '../audio/notes'
 import { centsZone } from '../theme'
 import { Icon } from '../components/ui/Icon'
+import { ShareButton } from '../components/ShareButton'
+import { ShareCardData } from '../share/shareCard'
 import { FeatureReport } from '../data/types'
 import '../styles/ministerio.css'
 
@@ -44,7 +46,7 @@ interface RunResult {
 }
 
 export default function HarmonyTrainer() {
-  const { engine, baseline, reload, micStatus } = useApp()
+  const { engine, baseline, reload, micStatus, profile } = useApp()
   const navigate = useNavigate()
   const [params] = useSearchParams()
 
@@ -229,10 +231,25 @@ export default function HarmonyTrainer() {
                 <SessionSummary report={result.report} />
               </div>
             )}
-            <div className="controls" style={{ justifyContent: 'center' }}>
+            <div className="controls" style={{ justifyContent: 'center', flexWrap: 'wrap' }}>
               <button className="btn btn--primary" onClick={() => setPhase('ready')}>
                 <Icon name="play" /> Treinar de novo
               </button>
+              <ShareButton
+                data={{
+                  eyebrow: 'meu encaixe',
+                  big: `${result.score}%`,
+                  bigLabel: 'de encaixe',
+                  title: `${ex.name} · ${part.name}`,
+                  name: profile.name || undefined,
+                  stats: [
+                    { label: 'notas encaixadas', value: `${result.hits}/${result.total}` },
+                    { label: 'desvio', value: `${Math.round(result.avgDev)}¢` },
+                    { label: 'voz', value: part.name },
+                  ],
+                }}
+                filename="canto-encaixe.png"
+              />
               <button className="btn" onClick={() => navigate('/ministerio')}>
                 Ir ao ministério
               </button>

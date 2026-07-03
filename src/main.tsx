@@ -14,6 +14,7 @@ import ReviewRunner from './pages/ReviewRunner'
 import SaudeVocal from './pages/SaudeVocal'
 import HarmonyTrainer from './pages/HarmonyTrainer'
 import Ministerio from './pages/Ministerio'
+import Comunidade from './pages/Comunidade'
 import Planos from './pages/Planos'
 import Progress from './pages/Progress'
 import Team from './pages/Team'
@@ -59,6 +60,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/desaquecimento" element={<ReviewRunner mode="cooldown" />} />
             <Route path="/harmonia" element={<HarmonyTrainer />} />
             <Route path="/ministerio" element={<Ministerio />} />
+            <Route path="/comunidade" element={<Comunidade />} />
             <Route path="/progresso" element={<Progress />} />
             <Route path="/time" element={<Team />} />
             <Route path="/eva" element={<Coach />} />

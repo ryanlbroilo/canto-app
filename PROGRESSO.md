@@ -137,8 +137,8 @@ Fila do usuário (fazer uma a uma). Feitas: **S1, S2, S3, S4**.
 | S2 | 💳 Transações & assinatura (Stripe) | ✅ feito (falta ativar chaves — ver abaixo) |
 | S3 | 🎯 EVA que explica | ✅ feito |
 | S4 | ⛪ Ferramentas de ministério de louvor | ✅ feito — ver §5.1 |
-| **S5** | 🔥 **Comunidade** | ⬜ **PRÓXIMA** — streak social, ligas por ministério, gravações compartilháveis (UGC) |
-| S6 | 🎼 Músicas autorais | ⬜ catálogo de músicas próprias/louvor (ver §7 licenciamento) |
+| S5 | 🔥 Comunidade | ✅ feito — ver §5.2 |
+| **S6** | 🎼 **Músicas autorais** | ⬜ **PRÓXIMA** — catálogo de músicas próprias/louvor (ver §7 licenciamento) |
 | S7 | 🎵 Cantar música real (score-following) | ⬜ feedback nota-a-nota — killer feature |
 | S8 | 🚀 Deploy de produção | ⬜ hospedagem, domínio, TLS, e-mail (verificação/reset), LGPD |
 | S9 | 🎓 Validação acadêmica | ⬜ parceria USP/CEV (Behlau) — validar o currículo |
@@ -189,6 +189,30 @@ carrega do backend; `TonePlayer` lifecycle num AudioContext real). **Nota dev:**
 o tenant de QA (`canto-dev-qa`) recebeu uma assinatura `igreja` ativa no banco só
 pra destravar o painel na verificação — não afeta prod (o webhook Stripe é a
 verdade).
+
+### 5.2 — S5: Comunidade (feito)
+
+O loop de retenção + aquisição orgânica. Reaproveita o roster/naipes do S4.
+
+- **Liga do ministério + streak social** (`/comunidade`) — ranking do time por **XP
+  da semana** (liga estilo Duolingo, reseta na semana ISO) + o quadro de
+  **ofensivas** (quem está "em chamas" e quem está "em risco hoje"). Solo (tenant
+  de 1) vê CTA de convidar o time. `src/pages/Comunidade.tsx`.
+- **Compartilhável (UGC) device-local** — o áudio nunca sai do device (moat); o
+  que se compartilha é o **resultado em números**, como um card de imagem gerado
+  na hora (SVG→canvas→PNG, sem libs) + Web Share (mobile) / download (desktop).
+  `src/share/shareCard.ts` + `src/components/ShareButton.tsx`. Ligado no resultado
+  do treino de harmonia ("meu encaixe") e na Comunidade ("minha semana").
+- **Backend** — `GET /api/tenant/leaderboard` (tenant-scoped, aberto a qualquer
+  membro): agrega XP da semana + XP total + ofensiva (das datas de sessão) + naipe
+  por membro. **Sem migração** (reusa `VocalSession` + `MinistryMember`). Datas em
+  UTC (consistente com o streak do front). `server/src/tenant/tenant.service.ts`.
+- Entradas: nav "Comunidade" (Acompanhamento) + link "ver a liga" no card da
+  semana do Dashboard.
+
+**Verificado**: typecheck front+back; leaderboard end-to-end autenticado; card
+UGC gera PNG real no browser (SVG bem-formado, nomes escapados); página renderiza;
+review adversarial.
 
 ### Para ATIVAR os pagamentos (S2) — só o fundador pode
 1. No dashboard do Stripe, criar **6 preços** (Pro / Igreja / Professor × mensal/anual).
@@ -287,9 +311,10 @@ a43d711 feat(saas): sync completo do estado do usuário
 
 ## 9. Próximo passo sugerido
 
-**S5 — Comunidade.** Streak social, ligas por ministério (ranking do time de
-louvor), e gravações compartilháveis (UGC) — o loop de retenção + aquisição
-orgânica. Aproveita o que S4 deixou pronto: naipes/ensaio (agrupar por
-ministério), o `MinistryMember`/roster no backend e o painel do líder. Manter o
-áudio device-local; o "compartilhável" é o RESULTADO (números/feature-JSON), não
-o áudio cru. Verificar via `preview_eval` (Bash instável) e PowerShell p/ Docker.
+**S6 — Músicas autorais.** Catálogo de músicas próprias/de louvor pra cantar no
+app (o degrau pro S7, score-following). Começar SEGURO no licenciamento (§7):
+autoral + domínio público (Harpa Cristã) + CCLI antes de ECAD/majors. Transcrever
+melodia é obra derivada — o device-local do Canto baixa o risco, mas o catálogo
+inicial deve ser autoral/domínio público. Reaproveita o `ShareButton`/UGC do S5 e
+os naipes do S4 (cantar sua voz na música). Verificar via `preview_eval` (Bash
+instável) e PowerShell p/ Docker.
