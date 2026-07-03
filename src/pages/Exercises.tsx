@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import '../styles/exercises.css'
 import { getExercise, EXERCISES, EXERCISE_COUNT } from '../data/exercises'
@@ -276,6 +276,7 @@ function UnitBlock({
               recommended={isReco}
               recoReason={isReco ? reco?.reason : undefined}
               recoTag={isReco ? reco?.tag : undefined}
+              autoFocus={nodeState === 'next'}
             />
           )
         })}
@@ -415,6 +416,7 @@ function StopNode({
   recommended,
   recoReason,
   recoTag,
+  autoFocus,
 }: {
   ex: Exercise
   index: number
@@ -426,8 +428,15 @@ function StopNode({
   recommended: boolean
   recoReason?: string
   recoTag?: string
+  autoFocus: boolean
 }) {
   const mastered = baseState === 'mastered'
+  const rootRef = useRef<HTMLDivElement>(null)
+  // "Caminho como home": ao abrir, rola até o nó ativo (onde o cantor está).
+  useEffect(() => {
+    if (autoFocus) rootRef.current?.scrollIntoView({ block: 'center' })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   // anel de progresso ao redor do nó quando praticado mas não dominado
   const showRing = baseState === 'practiced'
   const r = 30
@@ -436,6 +445,7 @@ function StopNode({
 
   return (
     <div
+      ref={rootRef}
       className="trk-stop reveal"
       data-side={side}
       data-mastered={mastered}
@@ -444,6 +454,7 @@ function StopNode({
       {/* Trilho + nó */}
       <div className="trk-rail">
         <div className="trk-node" data-state={nodeState}>
+          {nodeState === 'next' && <span className="trk-start-bubble">Começar</span>}
           {showRing && (
             <svg className="trk-node-ring" width={64} height={64} viewBox="0 0 64 64" aria-hidden="true">
               <circle className="trk-node-ring-fill" cx="32" cy="32" r={r} strokeDasharray={c} strokeDashoffset={ringOffset} />

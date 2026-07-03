@@ -1071,3 +1071,42 @@
 .trk-milestone[data-reached='false'] .trk-milestone-go {
   color: var(--faint);
 }
+
+/* ---------- Bolha "COMEÇAR" no nó ativo (caminho como home) ---------- */
+.trk-start-bubble {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  padding: 5px 12px;
+  border-radius: var(--r-pill);
+  background: linear-gradient(135deg, var(--gold-2), var(--gold-deep));
+  color: #241a08;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: 0 6px 16px rgba(233, 180, 76, 0.4);
+  animation: startBounce 1.6s var(--ease) infinite;
+}
+.trk-start-bubble::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -4px;
+  width: 9px;
+  height: 9px;
+  transform: translateX(-50%) rotate(45deg);
+  background: var(--gold-deep);
+}
+@keyframes startBounce {
+  0%,
+  100% {
+    transform: translateX(-50%) translateY(0);
+  }
+  50% {
+    transform: translateX(-50%) translateY(-4px);
+  }
+}
