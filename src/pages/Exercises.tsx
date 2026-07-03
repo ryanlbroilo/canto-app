@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import '../styles/exercises.css'
 import { getExercise, EXERCISES, EXERCISE_COUNT } from '../data/exercises'
 import { TRACKS, trackForLevel } from '../data/tracks'
 import { unitsForLevel } from '../data/curriculum'
+import { milestoneHref, milestonesAfter, PathMilestone } from '../data/pathMilestones'
 import { spacedReviewQueue } from '../data/review'
 import { isReviewDone } from '../data/store'
 import { SKILL_BY_ID, SKILLS } from '../data/skills'
@@ -185,18 +186,26 @@ export default function Exercises() {
         </div>
       </div>
 
-      {/* O CAMINHO: unidades temáticas em sequência */}
-      {units.map((unit, ui) => (
-        <UnitBlock
-          key={unit.id}
-          unit={unit}
-          state={ui < activeUnitIdx || activeUnitIdx === -1 ? 'done' : ui === activeUnitIdx ? 'active' : 'upcoming'}
-          done={done}
-          nextId={nextId}
-          recoId={recoInTrack}
-          reco={reco}
-        />
-      ))}
+      {/* O CAMINHO: unidades temáticas em sequência, com marcos de MÚSICA/HARMONIA
+          entre elas — o caminho desemboca em cantar de verdade. */}
+      {units.map((unit, ui) => {
+        const unitComplete = unit.exerciseIds.length > 0 && unit.exerciseIds.every(isMastered)
+        return (
+          <Fragment key={unit.id}>
+            <UnitBlock
+              unit={unit}
+              state={ui < activeUnitIdx || activeUnitIdx === -1 ? 'done' : ui === activeUnitIdx ? 'active' : 'upcoming'}
+              done={done}
+              nextId={nextId}
+              recoId={recoInTrack}
+              reco={reco}
+            />
+            {milestonesAfter(level, unit.index).map((m) => (
+              <MilestoneNode key={m.id} milestone={m} reached={unitComplete} />
+            ))}
+          </Fragment>
+        )
+      })}
 
       <div className="trk-foot reveal">
         <Icon name="route" size={18} />
@@ -293,6 +302,36 @@ function ReviewNode({ unitId, complete, title, side }: { unitId: string; complet
           {complete ? 'Unidade revisada! Troféu dourado — refaça quando quiser.' : 'Faça a revisão da unidade: repassa os pontos mais fracos e conquista o troféu.'}
         </div>
       </div>
+    </Link>
+  )
+}
+
+/* ---------------- Marco de recompensa: cantar música / harmonia ---------------- */
+// O que faz o Canto passar do Duolingo: o caminho desemboca em MÚSICA de verdade.
+// Sempre clicável (o app não acorrenta) — mas brilha quando a unidade anterior
+// foi dominada ("recompensa desbloqueada"), e fica em prévia até lá.
+function MilestoneNode({ milestone, reached }: { milestone: PathMilestone; reached: boolean }) {
+  return (
+    <Link
+      to={milestoneHref(milestone)}
+      className="trk-milestone reveal"
+      data-kind={milestone.kind}
+      data-reached={reached}
+    >
+      <span className="trk-milestone-badge">
+        <Icon name={milestone.kind === 'song' ? 'note' : 'music'} size={24} />
+      </span>
+      <div className="grow">
+        <span className="trk-milestone-eyebrow">
+          <Icon name={reached ? 'star' : 'lock'} size={12} />
+          {reached ? 'Recompensa desbloqueada' : 'Recompensa'} · {milestone.kind === 'song' ? 'cantar música' : 'harmonia'}
+        </span>
+        <div className="trk-milestone-title">{milestone.title}</div>
+        <p className="trk-milestone-blurb">{milestone.blurb}</p>
+      </div>
+      <span className="trk-milestone-go">
+        <Icon name={reached ? 'play' : 'chevron'} size={18} />
+      </span>
     </Link>
   )
 }

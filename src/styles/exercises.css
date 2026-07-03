@@ -995,3 +995,79 @@
   background: var(--gold-2);
   box-shadow: 0 0 0 4px rgba(233, 180, 76, 0.18);
 }
+
+/* ---------- Marco de recompensa (música / harmonia no caminho) ---------- */
+.trk-milestone {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 16px 0;
+  padding: 16px 18px;
+  border-radius: var(--r-lg);
+  border: 1px solid rgba(233, 180, 76, 0.28);
+  background: linear-gradient(135deg, rgba(233, 180, 76, 0.12), rgba(198, 93, 59, 0.08));
+  box-shadow: var(--shadow-gold);
+  overflow: hidden;
+  transition: transform 160ms var(--ease), box-shadow 160ms var(--ease);
+}
+.trk-milestone:hover {
+  transform: translateY(-2px);
+}
+.trk-milestone[data-reached='false'] {
+  border-color: var(--hairline);
+  background: rgba(255, 255, 255, 0.02);
+  box-shadow: none;
+  opacity: 0.72;
+}
+.trk-milestone-badge {
+  width: 52px;
+  height: 52px;
+  flex: none;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  color: #241a08;
+  background: linear-gradient(135deg, var(--gold-2), var(--gold-deep));
+  box-shadow: 0 6px 18px rgba(233, 180, 76, 0.3);
+}
+.trk-milestone[data-reached='false'] .trk-milestone-badge {
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--hairline);
+  box-shadow: none;
+}
+.trk-milestone-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--gold-2);
+}
+.trk-milestone[data-reached='false'] .trk-milestone-eyebrow {
+  color: var(--muted);
+}
+.trk-milestone-title {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 600;
+  margin-top: 3px;
+  color: var(--text);
+}
+.trk-milestone-blurb {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 3px 0 0;
+  max-width: 54ch;
+  line-height: 1.5;
+}
+.trk-milestone-go {
+  flex: none;
+  color: var(--gold-2);
+}
+.trk-milestone[data-reached='false'] .trk-milestone-go {
+  color: var(--faint);
+}
