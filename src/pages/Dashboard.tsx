@@ -82,7 +82,7 @@ export default function Dashboard() {
   // A trilha do nível é o currículo inteiro (dezenas de nós). Na home mostramos
   // só uma JANELA ao redor de onde o cantor está (estilo Duolingo) — o caminho
   // completo vive na página de Exercícios. Sem isso, 80+ passos se empilham.
-  const STEP_WINDOW = 6
+  const STEP_WINDOW = 5
   const nextIdx = track.exerciseIds.findIndex((id) => id === nextTrackId)
   const anchor = nextIdx < 0 ? track.exerciseIds.length - STEP_WINDOW : nextIdx - 1
   const stepStart = Math.max(0, Math.min(anchor, track.exerciseIds.length - STEP_WINDOW))
@@ -241,18 +241,20 @@ export default function Dashboard() {
               </span>
             </div>
 
-            {/* escada de passos: uma janela ao redor do próximo passo (não o nível inteiro) */}
-            <div className="dsh-steps">
-              {stepWindow.map((id) => {
+            {/* mini-caminho serpenteado: uma janela ao redor do próximo passo,
+                com o nó ativo em destaque ("Continuar") — estilo Duolingo home. */}
+            <div className="dsh-mpath">
+              {stepWindow.map((id, i) => {
                 const ex = getExercise(id)
                 if (!ex) return null
                 const state = dominated(id) ? 'done' : id === nextTrackId ? 'next' : 'todo'
                 return (
-                  <Link key={id} to={`/exercicios/${id}`} className="dsh-step" data-state={state} title={ex.name}>
-                    <span className="dsh-step-dot">
-                      <Icon name={state === 'done' ? 'check' : KIND_ICON[ex.kind]} />
+                  <Link key={id} to={`/exercicios/${id}`} className="dsh-mp-node" data-state={state} data-side={i % 2 === 0 ? 'l' : 'r'} title={ex.name}>
+                    <span className="dsh-mp-name">{ex.name}</span>
+                    <span className="dsh-mp-dot">
+                      {state === 'next' && <span className="dsh-mp-cta">Continuar</span>}
+                      <Icon name={state === 'done' ? 'check' : KIND_ICON[ex.kind]} size={16} />
                     </span>
-                    <span className="dsh-step-label">{ex.name}</span>
                   </Link>
                 )
               })}

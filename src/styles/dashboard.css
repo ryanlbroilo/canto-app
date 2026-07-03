@@ -335,6 +335,96 @@
 .dsh-step[data-state='done'] .dsh-step-label { color: var(--muted); }
 .dsh-step[data-state='next'] .dsh-step-label { color: var(--gold-2); font-weight: 600; }
 
+/* mini-caminho serpenteado da home (nós em zigue-zague + linha central) */
+.dsh-mpath {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+.dsh-mpath::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 22px;
+  bottom: 22px;
+  width: 2px;
+  transform: translateX(-50%);
+  background: repeating-linear-gradient(var(--hairline-strong) 0 6px, transparent 6px 12px);
+  z-index: 0;
+}
+.dsh-mp-node {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr 40px 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 5px 0;
+  text-decoration: none;
+}
+.dsh-mp-name {
+  grid-column: 1;
+  text-align: right;
+  font-size: 12.5px;
+  line-height: 1.25;
+  color: var(--faint);
+}
+.dsh-mp-node[data-side='l'] .dsh-mp-name {
+  grid-column: 3;
+  text-align: left;
+}
+.dsh-mp-dot {
+  position: relative;
+  grid-column: 2;
+  justify-self: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  color: var(--faint);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--hairline);
+  transition: all 160ms var(--ease);
+}
+.dsh-mp-node[data-state='done'] .dsh-mp-dot {
+  color: var(--good);
+  background: rgba(87, 214, 166, 0.12);
+  border-color: rgba(87, 214, 166, 0.34);
+}
+.dsh-mp-node[data-state='done'] .dsh-mp-name {
+  color: var(--muted);
+}
+.dsh-mp-node[data-state='next'] .dsh-mp-dot {
+  color: #241a08;
+  background: linear-gradient(135deg, var(--gold-2), var(--gold-deep));
+  border-color: transparent;
+  box-shadow: 0 6px 18px rgba(233, 180, 76, 0.3);
+  animation: dshPulse 2.2s var(--ease) infinite;
+}
+.dsh-mp-node[data-state='next'] .dsh-mp-name {
+  color: var(--gold-2);
+  font-weight: 600;
+}
+.dsh-mp-cta {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 3px 9px;
+  border-radius: var(--r-pill);
+  background: linear-gradient(135deg, var(--gold-2), var(--gold-deep));
+  color: #241a08;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(233, 180, 76, 0.4);
+}
+
 /* ---------- Skills (mini) ---------- */
 .dsh-skills {
   display: flex;
