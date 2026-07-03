@@ -3,6 +3,7 @@
 import { GamificationState, Profile, Settings, SessionRecord, Streak, VocalBaseline } from './types'
 import { computeGamification } from './gamification'
 import { pushSessionToBackend, pushUserState, UserStatePayload } from './sync'
+import { MinistryPlan, VoicePart } from './harmony'
 
 const K = {
   profile: 'canto.profile.v1',
@@ -13,6 +14,8 @@ const K = {
   seenOnboarding: 'canto.seenOnboarding.v1',
   achievements: 'canto.achievements.v1',
   reviewsDone: 'canto.reviewsDone.v1',
+  voicePart: 'canto.voicePart.v1',
+  ministryPlan: 'canto.ministryPlan.v1',
 }
 
 /** Conquista desbloqueada, com o momento em que caiu (para "novo!" na UI). */
@@ -140,9 +143,23 @@ export function markReviewDone(unitId: string): void {
   }
 }
 
+// ---------- Ministério: naipe do cantor + cache do plano de ensaio ----------
+// O naipe (voz que a pessoa canta) fica local E sincroniza pelo endpoint próprio
+// (não pelo blob de estado). O plano é um CACHE local — o servidor é a verdade.
+export const getVoicePart = (): VoicePart => read<VoicePart>(K.voicePart, 'unassigned')
+export function setVoicePart(p: VoicePart): void {
+  write(K.voicePart, p)
+}
+
+export const getCachedPlan = (): MinistryPlan | null => read<MinistryPlan | null>(K.ministryPlan, null)
+/** Guarda o plano vindo do servidor (servidor vence; puro cache, não re-empurra). */
+export function mergeServerPlan(plan: MinistryPlan | null): void {
+  write(K.ministryPlan, plan)
+}
+
 /** Limpa os dados locais do usuário (usar no logout, para não vazar entre contas). */
 export function clearUserData(): void {
-  for (const k of [K.sessions, K.baseline, K.rangeHistory, K.achievements, K.seenOnboarding, K.profile, K.reviewsDone]) {
+  for (const k of [K.sessions, K.baseline, K.rangeHistory, K.achievements, K.seenOnboarding, K.profile, K.reviewsDone, K.voicePart, K.ministryPlan]) {
     try {
       localStorage.removeItem(k)
     } catch {
