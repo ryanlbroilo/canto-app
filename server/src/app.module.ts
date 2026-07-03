@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config'
 import { APP_GUARD } from '@nestjs/core'
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 import { AuthModule } from './auth/auth.module'
+import { BillingModule } from './billing/billing.module'
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard'
 import { envValidationSchema } from './config/env.validation'
 import { EvaModule } from './eva/eva.module'
@@ -31,6 +32,7 @@ import { StateModule } from './state/state.module'
     InvitesModule,
     TenantModule,
     EvaModule,
+    BillingModule,
     HealthModule,
   ],
   providers: [

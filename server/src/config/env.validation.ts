@@ -18,4 +18,15 @@ export const envValidationSchema = Joi.object({
   EVA_HUB_KEY: Joi.string().allow('').optional(),
   EVA_ASSISTANT_ID: Joi.string().allow('').optional(),
   EVA_HUB_URL: Joi.string().uri().default('https://evahub.com.br/api/v1/chat'),
+  // Billing (Stripe) — OPCIONAIS: sem chaves o /api/billing/checkout responde 501
+  // e o app segue no plano free. Price IDs criados no dashboard do Stripe.
+  STRIPE_SECRET_KEY: Joi.string().allow('').optional(),
+  STRIPE_WEBHOOK_SECRET: Joi.string().allow('').optional(),
+  STRIPE_PRICE_PRO_MONTHLY: Joi.string().allow('').optional(),
+  STRIPE_PRICE_PRO_YEARLY: Joi.string().allow('').optional(),
+  STRIPE_PRICE_IGREJA_MONTHLY: Joi.string().allow('').optional(),
+  STRIPE_PRICE_IGREJA_YEARLY: Joi.string().allow('').optional(),
+  STRIPE_PRICE_PROFESSOR_MONTHLY: Joi.string().allow('').optional(),
+  STRIPE_PRICE_PROFESSOR_YEARLY: Joi.string().allow('').optional(),
+  APP_URL: Joi.string().uri().default('http://localhost:5173'),
 })

@@ -17,13 +17,33 @@ enum Role {
 }
 
 model Tenant {
-  id        String         @id @default(cuid())
-  name      String
-  slug      String         @unique
-  createdAt DateTime       @default(now())
-  users     User[]
-  sessions  VocalSession[]
-  invites   Invite[]
+  id           String         @id @default(cuid())
+  name         String
+  slug         String         @unique
+  createdAt    DateTime       @default(now())
+  users        User[]
+  sessions     VocalSession[]
+  invites      Invite[]
+  subscription Subscription?
+}
+
+// Assinatura por TENANT (não por usuário): o tenant tem o plano e todos os
+// membros herdam os entitlements. Individual = tenant solo com Pro; igreja =
+// tenant com Igreja. Espelha o Stripe (fonte da verdade = webhook).
+model Subscription {
+  id                   String    @id @default(cuid())
+  tenantId             String    @unique
+  tenant               Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plan                 String    @default("free") // free | pro | igreja | professor
+  status               String    @default("free") // free | trialing | active | past_due | canceled
+  stripeCustomerId     String?   @unique
+  stripeSubscriptionId String?   @unique
+  stripePriceId        String?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean   @default(false)
+  trialEnd             DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 }
 
 // Convite para entrar num tenant (professor/igreja convida alunos/time).

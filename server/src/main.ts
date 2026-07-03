@@ -6,7 +6,9 @@ import { AppModule } from './app.module'
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter'
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule, { logger: ['error', 'warn', 'log'] })
+  // rawBody: true preserva o corpo cru (necessário pra verificar a assinatura
+  // do webhook do Stripe, que é feita sobre os bytes originais).
+  const app = await NestFactory.create(AppModule, { logger: ['error', 'warn', 'log'], rawBody: true })
   const config = app.get(ConfigService)
 
   // Segurança de cabeçalhos. API é JSON puro — sem CSP/COEP (isso é do front).
