@@ -23,4 +23,10 @@ export class TenantController {
   memberDetail(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.tenant.memberDetail(user, id)
   }
+
+  // Ranking do time (liga do ministério): aberto a qualquer membro autenticado.
+  @Get('leaderboard')
+  leaderboard(@CurrentUser() user: AuthUser) {
+    return this.tenant.leaderboard(user)
+  }
 }
