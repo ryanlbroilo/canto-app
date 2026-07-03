@@ -15,6 +15,7 @@ const TREINO: NavItem[] = [
   { to: '/praticar', label: 'Praticar', icon: 'mic' },
   { to: '/exercicios', label: 'Exercícios', icon: 'dumbbell' },
   { to: '/harmonia', label: 'Harmonia', icon: 'music' },
+  { to: '/musicas', label: 'Músicas', icon: 'note' },
   { to: '/range', label: 'Meu range', icon: 'gauge' },
   { to: '/saude', label: 'Saúde vocal', icon: 'lungs' },
 ]

@@ -138,8 +138,8 @@ Fila do usuário (fazer uma a uma). Feitas: **S1, S2, S3, S4**.
 | S3 | 🎯 EVA que explica | ✅ feito |
 | S4 | ⛪ Ferramentas de ministério de louvor | ✅ feito — ver §5.1 |
 | S5 | 🔥 Comunidade | ✅ feito — ver §5.2 |
-| **S6** | 🎼 **Músicas autorais** | ⬜ **PRÓXIMA** — catálogo de músicas próprias/louvor (ver §7 licenciamento) |
-| S7 | 🎵 Cantar música real (score-following) | ⬜ feedback nota-a-nota — killer feature |
+| S6 | 🎼 Músicas autorais | ✅ feito — ver §5.3 |
+| **S7** | 🎵 **Cantar música real (score-following)** | ⬜ **PRÓXIMA** — feedback nota-a-nota — killer feature (S6 já entregou um sing-along pontuado; S7 aprofunda) |
 | S8 | 🚀 Deploy de produção | ⬜ hospedagem, domínio, TLS, e-mail (verificação/reset), LGPD |
 | S9 | 🎓 Validação acadêmica | ⬜ parceria USP/CEV (Behlau) — validar o currículo |
 
@@ -213,6 +213,33 @@ O loop de retenção + aquisição orgânica. Reaproveita o roster/naipes do S4.
 **Verificado**: typecheck front+back; leaderboard end-to-end autenticado; card
 UGC gera PNG real no browser (SVG bem-formado, nomes escapados); página renderiza;
 review adversarial.
+
+### 5.3 — S6: Músicas autorais (feito)
+
+O catálogo de músicas + o degrau pro S7. **Frontend-only** (conteúdo estático,
+como a exercise-library — sem backend, sem migração).
+
+- **Catálogo** (`/musicas`, `src/pages/Musicas.tsx`) — músicas navegáveis com
+  filtro (todas/autorais/domínio público), dificuldade e tags. `src/data/songs.ts`
+  = modelo `Song`/`SongNote` (melodia beat-based + letra sílaba-a-sílaba + licença)
+  + 4 seeds: 3 autorais worship + "Alegria" (Ode à Alegria/Beethoven, domínio
+  público, letra autoral). **Licenciamento seguro** (§7): só autoral + domínio
+  público; nada de obra protegida antes de CCLI. Melodias corretas por construção.
+- **Player** (`/musicas/:id`, `src/pages/SongPlayer.tsx`) — dois modos:
+  **Aprender** (o app toca a melodia de referência com o `TonePlayer` do S4, sem
+  nota — não precisa de mic) e **Cantar** (score-following leve: contagem 3-2-1,
+  corre a melodia no relógio, compara o pitch com a nota-alvo e pontua por nota via
+  o `harmonyScore` do S4; agulha de cents + letra em karaokê + progresso). Sessão
+  gravada como `song:*` (inerte pro currículo). Transpõe pro range do cantor.
+  Resultado com o `ShareButton` do S5 ("cantei no Canto"). Guia opcional no modo
+  cantar (padrão OFF pra não vazar no mic).
+- Entradas: nav "Músicas" (Treino) + card no Dashboard.
+
+**Verificado**: typecheck; `song:*` inerte; transposição no range (baseline
+estreito + null) com timing monotônico; catálogo e tela do player renderizam;
+scoring reusado do S4. **Nota**: o loop do relógio (RAF) NÃO roda no preview
+headless (aba oculta → `requestAnimationFrame` pausado) — vale pra todos os
+runners (Sequence/Harmonia/Música); funciona no browser visível. Review adversarial.
 
 ### Para ATIVAR os pagamentos (S2) — só o fundador pode
 1. No dashboard do Stripe, criar **6 preços** (Pro / Igreja / Professor × mensal/anual).
@@ -311,10 +338,11 @@ a43d711 feat(saas): sync completo do estado do usuário
 
 ## 9. Próximo passo sugerido
 
-**S6 — Músicas autorais.** Catálogo de músicas próprias/de louvor pra cantar no
-app (o degrau pro S7, score-following). Começar SEGURO no licenciamento (§7):
-autoral + domínio público (Harpa Cristã) + CCLI antes de ECAD/majors. Transcrever
-melodia é obra derivada — o device-local do Canto baixa o risco, mas o catálogo
-inicial deve ser autoral/domínio público. Reaproveita o `ShareButton`/UGC do S5 e
-os naipes do S4 (cantar sua voz na música). Verificar via `preview_eval` (Bash
-instável) e PowerShell p/ Docker.
+**S7 — Cantar música real (score-following) — killer feature.** O S6 já entregou
+a base (catálogo `songs.ts`, o `SongPlayer` com relógio + scoring por nota). O S7
+aprofunda: melodias mais longas/completas, detecção de onset (entrar na hora certa,
+não só afinação), viz de partitura rolando (piano-roll com playhead + curva do
+cantor), tolerância por tempo/legato, e talvez trilha de acompanhamento. Cuidado:
+RAF pausa em aba oculta — considerar `AudioContext.currentTime` como relógio
+mestre (mais estável que performance.now/RAF). Verificar via `preview_eval`
+(lembrar: RAF não roda no preview headless) e PowerShell p/ Docker.

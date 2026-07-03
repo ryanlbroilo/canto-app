@@ -426,6 +426,9 @@ export default function Dashboard() {
             <Link to="/harmonia" className="btn btn--sm btn--primary btn--block" style={{ marginTop: 12 }}>
               <Icon name="music" /> Treinar harmonia
             </Link>
+            <Link to="/musicas" className="btn btn--sm btn--block" style={{ marginTop: 8 }}>
+              <Icon name="note" /> Cantar uma música
+            </Link>
             {canMinistry && (
               <Link to="/ministerio" className="btn btn--sm btn--block" style={{ marginTop: 8 }}>
                 <Icon name="church" /> Abrir ministério
