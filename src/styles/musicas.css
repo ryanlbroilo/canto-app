@@ -1,0 +1,122 @@
+/* ============================================================
+   Músicas — catálogo + player (aprender / cantar). Só o que não vem
+   de components.css. Reusa .card/.badge/.player/.cents-track/.bar.
+   ============================================================ */
+
+/* ---------- Player ---------- */
+.song-count {
+  font-family: var(--font-display);
+  font-size: 96px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--gold-2);
+  animation: songPulse 1s var(--ease) infinite;
+}
+@keyframes songPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+}
+.song-lyrics {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 3px 8px;
+  max-width: 560px;
+  line-height: 1.7;
+}
+.song-syl {
+  font-size: 18px;
+  color: var(--faint);
+  transition: color 120ms var(--ease);
+}
+.song-syl[data-state='done'] {
+  color: var(--muted);
+}
+.song-syl[data-state='now'] {
+  color: var(--gold-2);
+  font-weight: 700;
+}
+.song-lyrics-preview {
+  text-align: center;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.6;
+  max-width: 52ch;
+}
+.song-guide-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+/* ---------- Catálogo ---------- */
+.song-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 12px;
+  margin-top: 6px;
+}
+.song-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 15px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--hairline);
+  background: rgba(255, 255, 255, 0.02);
+  text-align: left;
+  color: var(--text);
+  transition: all 150ms var(--ease);
+}
+.song-card:hover {
+  border-color: var(--hairline-strong);
+  transform: translateY(-2px);
+}
+.song-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.song-card-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+}
+.song-card-composer {
+  font-size: 12px;
+  color: var(--muted);
+}
+.song-card-diff {
+  font-size: 9px;
+  color: var(--gold);
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+.song-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+.song-tag {
+  font-size: 11px;
+  color: var(--muted);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-pill);
+  padding: 2px 9px;
+}
+.song-source {
+  font-size: 11px;
+  color: var(--faint);
+}
