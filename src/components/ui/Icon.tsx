@@ -27,6 +27,7 @@ type IconName =
   | 'route'
   | 'crown'
   | 'bridge'
+  | 'church'
 
 const PATHS: Record<IconName, JSX.Element> = {
   home: <path d="M3 10.5 12 3l9 7.5M5 9v11h5v-6h4v6h5V9" />,
@@ -111,6 +112,13 @@ const PATHS: Record<IconName, JSX.Element> = {
     <>
       <path d="M3 8c4 0 6 3 9 3s5-3 9-3" />
       <path d="M3 8v8M21 8v8M9 11v5M15 11v5M3 16h18" />
+    </>
+  ),
+  church: (
+    <>
+      <path d="M12 2v4M10.5 4h3" />
+      <path d="M12 7 5 11v9h14v-9z" />
+      <path d="M9.5 20v-4a2.5 2.5 0 0 1 5 0v4" />
     </>
   ),
 }

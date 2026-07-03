@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { Icon, IconName } from '../components/ui/Icon'
 import { EXERCISES } from '../data/exercises'
+import { useEntitlement } from '../hooks/useEntitlement'
 import { useApp } from './AppContext'
 
 interface NavItem {
@@ -13,17 +14,20 @@ interface NavItem {
 const TREINO: NavItem[] = [
   { to: '/praticar', label: 'Praticar', icon: 'mic' },
   { to: '/exercicios', label: 'Exercícios', icon: 'dumbbell' },
+  { to: '/harmonia', label: 'Harmonia', icon: 'music' },
   { to: '/range', label: 'Meu range', icon: 'gauge' },
   { to: '/saude', label: 'Saúde vocal', icon: 'lungs' },
 ]
 const ACOMP: NavItem[] = [
   { to: '/progresso', label: 'Progresso', icon: 'chart' },
+  { to: '/ministerio', label: 'Ministério', icon: 'church' },
   { to: '/time', label: 'Meu time', icon: 'crown' },
   { to: '/eva', label: 'EVA Coach', icon: 'spark' },
 ]
 
 export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () => void }) {
   const { streak, gamification } = useApp()
+  const { allowed: canMinistry } = useEntitlement('team_admin')
 
   const link = (item: NavItem) => (
     <NavLink
@@ -36,6 +40,7 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
       <Icon name={item.icon} />
       <span>{item.label}</span>
       {item.to === '/exercicios' && <span className="nav-badge">{EXERCISES.length}</span>}
+      {item.to === '/ministerio' && !canMinistry && <span className="nav-badge" style={{ opacity: 0.7 }}><Icon name="lock" size={11} /></span>}
     </NavLink>
   )
 

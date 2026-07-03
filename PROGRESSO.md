@@ -129,19 +129,66 @@ Planos, Onboarding, Auth.
 
 ## 5. O que FALTA (roadmap 1-a-1, sprints S1–S9)
 
-Fila do usuário (fazer uma a uma). Feitas: **S1, S2, S3**.
+Fila do usuário (fazer uma a uma). Feitas: **S1, S2, S3, S4**.
 
 | # | Sprint | Status |
 |---|--------|--------|
 | S1 | 🫁 Saúde vocal | ✅ feito |
 | S2 | 💳 Transações & assinatura (Stripe) | ✅ feito (falta ativar chaves — ver abaixo) |
 | S3 | 🎯 EVA que explica | ✅ feito |
-| **S4** | ⛪ **Ferramentas de ministério de louvor** | ⬜ **PRÓXIMA** — aquecimento em grupo, treino de harmonia/blend, painel do líder, plano Igreja. Moat gospel + motor B2B2C. |
-| S5 | 🔥 Comunidade | ⬜ streak social, ligas por ministério, gravações compartilháveis (UGC) |
+| S4 | ⛪ Ferramentas de ministério de louvor | ✅ feito — ver §5.1 |
+| **S5** | 🔥 **Comunidade** | ⬜ **PRÓXIMA** — streak social, ligas por ministério, gravações compartilháveis (UGC) |
 | S6 | 🎼 Músicas autorais | ⬜ catálogo de músicas próprias/louvor (ver §7 licenciamento) |
 | S7 | 🎵 Cantar música real (score-following) | ⬜ feedback nota-a-nota — killer feature |
 | S8 | 🚀 Deploy de produção | ⬜ hospedagem, domínio, TLS, e-mail (verificação/reset), LGPD |
 | S9 | 🎓 Validação acadêmica | ⬜ parceria USP/CEV (Behlau) — validar o currículo |
+
+### 5.1 — S4: Ferramentas de ministério de louvor (feito)
+
+O moat gospel + o motor B2B2C. Três frentes, todas device-local no que toca o áudio:
+
+- **Treinador de harmonia/encaixe** (`/harmonia`, moat) — o cantor sustenta a SUA
+  voz (terça/quinta/oitava/baixo) contra um **drone de referência** e o app mede
+  afinação do INTERVALO (cents contra o alvo, não a nota mais próxima) + o
+  "encaixe"/blend (firmeza). 10 drills numa progressão (unísono → oitava → quinta
+  → terças → completar o acorde → baixo). Reusa a `PitchEngine` (pitch ao vivo) +
+  um `TonePlayer` novo (WebAudio, AudioContext próprio; a saída da PitchEngine é
+  muda). Sessões gravadas como `kind:'exercise'`, `exerciseId:'harmony:<id>'` —
+  **inerte pro currículo** (nenhum resolve em `getExercise` → não polui maestria/
+  revisão espaçada; XP cai em prática livre → afinação+sustentação).
+  - `src/data/harmony.ts` — vozes do louvor (WORSHIP_PARTS/VOICE_PARTS), 10
+    `HARMONY_EXERCISES`, `rootFor/targetMidiFor/droneMidisFor` (transpõe pro range,
+    com headroom pro baixo negativo). `src/data/harmonyScore.ts` — accuracy+blend.
+  - `src/audio/TonePlayer.ts` — drone (triangular + passa-baixa 1.8 kHz, ataque
+    suave). `src/pages/HarmonyTrainer.tsx` — runner (espelha o Sequence).
+- **Ensaio do ministério + naipes + prontidão** (`/ministerio`, plano Igreja) —
+  o líder monta um plano compartilhado (aquecimento + set de harmonia), atribui
+  **naipes** (voz de cada membro) e vê o **quadro de prontidão pro culto**
+  (aqueceu hoje? praticou a harmonia nos últimos 7 dias?). Membro vê o plano
+  read-only, escolhe seu naipe e dispara cada item. `src/pages/Ministerio.tsx`.
+- **Gating** — `src/hooks/useEntitlement.ts` (novo; lê billing/`can()`): a
+  SUPERFÍCIE `/ministerio` é gated por `team_admin` (plano Igreja); as AÇÕES de
+  edição por role (OWNER/ADMIN). O treinador `/harmonia` fica aberto (funil).
+  Sidebar mostra cadeado no item Ministério quando sem plano; Dashboard tem card
+  de harmonia (todos) + link do ministério (só Igreja).
+
+**Backend** (`server/src/ministry/`, migração `20260703103710_ministry`, aditiva):
+modelos `MinistryPlan` (1/tenant, 2 colunas Json warmup+harmonySet) e
+`MinistryMember` (naipe, enum `VoicePart` MAIÚSCULO). Endpoints tenant-scoped:
+`GET/PUT /api/ministry/plan`, `GET /api/ministry/members`, `PUT /api/ministry/
+parts/me`, `PUT /api/ministry/members/:id/part`, `GET /api/ministry/readiness`
+(mutações + prontidão só líder). O `api.ts` do front recebe uma lista PLANA de
+itens (o serviço mescla/separa as 2 colunas) e mapeia o case do naipe
+(`partToApi`/`partFromApi`, a única fronteira lower↔UPPER). **Backend-opcional:**
+se `/api/ministry/*` cai, o front degrada (cache local + treino de harmonia segue).
+
+**Verificado** (typecheck front+back; backend end-to-end autenticado: plano CRUD,
+naipe, prontidão; front via `preview_eval`: `harmony:*` inerte, transposição no
+range, scoring, round-trip de case, `clearUserData`; painel de líder renderiza e
+carrega do backend; `TonePlayer` lifecycle num AudioContext real). **Nota dev:**
+o tenant de QA (`canto-dev-qa`) recebeu uma assinatura `igreja` ativa no banco só
+pra destravar o painel na verificação — não afeta prod (o webhook Stripe é a
+verdade).
 
 ### Para ATIVAR os pagamentos (S2) — só o fundador pode
 1. No dashboard do Stripe, criar **6 preços** (Pro / Igreja / Professor × mensal/anual).
@@ -240,8 +287,9 @@ a43d711 feat(saas): sync completo do estado do usuário
 
 ## 9. Próximo passo sugerido
 
-**S4 — Ferramentas de ministério de louvor.** É o moat gospel + o motor de
-distribuição B2B2C (destrava o plano Igreja). Escopo provável: aquecimento em
-grupo, treino de "achar sua voz na harmonia"/blend, trilhas de vocalista-guia vs.
-back, e o painel do líder já existente (Team.tsx) evoluído para o ministério.
-Verificar via `preview_eval` (Bash instável) e PowerShell para Docker.
+**S5 — Comunidade.** Streak social, ligas por ministério (ranking do time de
+louvor), e gravações compartilháveis (UGC) — o loop de retenção + aquisição
+orgânica. Aproveita o que S4 deixou pronto: naipes/ensaio (agrupar por
+ministério), o `MinistryMember`/roster no backend e o painel do líder. Manter o
+áudio device-local; o "compartilhável" é o RESULTADO (números/feature-JSON), não
+o áudio cru. Verificar via `preview_eval` (Bash instável) e PowerShell p/ Docker.

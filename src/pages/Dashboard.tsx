@@ -9,6 +9,7 @@ import { SKILL_BY_ID } from '../data/skills'
 import { TRACKS, trackForLevel } from '../data/tracks'
 import { ACHIEVEMENTS } from '../data/achievements'
 import { getExercise } from '../data/exercises'
+import { useEntitlement } from '../hooks/useEntitlement'
 import type { ExerciseKind, TrackLevel } from '../data/types'
 
 // ---------- helpers de apresentação ----------
@@ -57,6 +58,7 @@ export default function Dashboard() {
   const { engine, baseline, profile, streak, sessions, gamification } = useApp()
   const { totalXp, level, xpIntoLevel, xpForNext, skills, achievements, recommendation, exercisesDone } =
     gamification
+  const { allowed: canMinistry } = useEntitlement('team_admin')
 
   const isNew = sessions.length === 0
   const week = last7(streak.days)
@@ -410,6 +412,22 @@ export default function Dashboard() {
                 </Link>
               </div>
             </div>
+          </div>
+
+          {/* Harmonia & ministério */}
+          <div className="card reveal r4">
+            <span className="card-title">Cante em harmonia</span>
+            <p className="hint" style={{ marginTop: 6 }}>
+              Ache sua voz na harmonia: cante sua terça, quinta ou oitava contra uma referência e sinta o encaixe travar.
+            </p>
+            <Link to="/harmonia" className="btn btn--sm btn--primary btn--block" style={{ marginTop: 12 }}>
+              <Icon name="music" /> Treinar harmonia
+            </Link>
+            {canMinistry && (
+              <Link to="/ministerio" className="btn btn--sm btn--block" style={{ marginTop: 8 }}>
+                <Icon name="church" /> Abrir ministério
+              </Link>
+            )}
           </div>
         </div>
       </div>
