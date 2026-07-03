@@ -276,18 +276,19 @@
   min-width: 44px;
   text-align: right;
 }
-/* escada de passos da trilha */
+/* escada de passos da trilha (janela de ~6 nós; defensivo contra esmagamento) */
 .dsh-steps {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 .dsh-step {
-  flex: 1;
+  flex: 1 1 64px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 7px;
-  min-width: 0;
+  min-width: 48px; /* nunca encolher abaixo do dot: quebra linha em vez de sobrepor */
   text-align: center;
 }
 .dsh-step-dot {

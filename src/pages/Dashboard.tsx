@@ -79,6 +79,15 @@ export default function Dashboard() {
     : 0
   // Próximo passo da trilha: primeiro exercício ainda não dominado.
   const nextTrackId = track.exerciseIds.find((id) => !dominated(id))
+  // A trilha do nível é o currículo inteiro (dezenas de nós). Na home mostramos
+  // só uma JANELA ao redor de onde o cantor está (estilo Duolingo) — o caminho
+  // completo vive na página de Exercícios. Sem isso, 80+ passos se empilham.
+  const STEP_WINDOW = 6
+  const nextIdx = track.exerciseIds.findIndex((id) => id === nextTrackId)
+  const anchor = nextIdx < 0 ? track.exerciseIds.length - STEP_WINDOW : nextIdx - 1
+  const stepStart = Math.max(0, Math.min(anchor, track.exerciseIds.length - STEP_WINDOW))
+  const stepWindow = track.exerciseIds.slice(stepStart, stepStart + STEP_WINDOW)
+  const stepsRemaining = Math.max(0, track.exerciseIds.length - (stepStart + STEP_WINDOW))
 
   // --- Próximo passo adaptativo (o coração da home) ---
   // Usa a recomendação da gamificação; se ela não existir (usuário sem sessões
@@ -232,9 +241,9 @@ export default function Dashboard() {
               </span>
             </div>
 
-            {/* escada de passos: dominados / próximo / bloqueados */}
+            {/* escada de passos: uma janela ao redor do próximo passo (não o nível inteiro) */}
             <div className="dsh-steps">
-              {track.exerciseIds.map((id) => {
+              {stepWindow.map((id) => {
                 const ex = getExercise(id)
                 if (!ex) return null
                 const state = dominated(id) ? 'done' : id === nextTrackId ? 'next' : 'todo'
@@ -248,6 +257,11 @@ export default function Dashboard() {
                 )
               })}
             </div>
+            {stepsRemaining > 0 && (
+              <Link to="/exercicios" className="dsh-link" style={{ marginTop: 10, display: 'inline-flex' }}>
+                ver o caminho completo · +{stepsRemaining} nós <Icon name="chevron" size={14} />
+              </Link>
+            )}
           </div>
 
           {/* Skills (mini) */}
