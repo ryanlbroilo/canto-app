@@ -8,6 +8,7 @@ import { milestoneHref, milestonesAfter, PathMilestone } from '../data/pathMiles
 import { spacedReviewQueue } from '../data/review'
 import { isReviewDone } from '../data/store'
 import { SKILL_BY_ID, SKILLS } from '../data/skills'
+import { diagnose, Diagnosis } from '../data/coaching'
 import { CurriculumUnit, Exercise, ExerciseKind, ExercisePhase, SkillId, TrackLevel } from '../data/types'
 import { useApp } from '../app/AppContext'
 import { Icon, IconName } from '../components/ui/Icon'
@@ -69,6 +70,16 @@ export default function Exercises() {
 
   // Unidades do nível ativo (o path completo, agrupado estilo Duolingo).
   const units = useMemo(() => unitsForLevel(level), [level])
+
+  // EVA companheira: a diagnose da sessão mais recente com relatório — ela fala
+  // do que ACONTECEU na sua voz (coaching.ts), não filler de mascote.
+  const lastDiag = useMemo<Diagnosis | null>(() => {
+    const last = [...sessions].reverse().find((s) => s.featureReport)
+    const ex = last?.exerciseId ? getExercise(last.exerciseId) : undefined
+    if (!last?.featureReport || !ex) return null
+    return diagnose(last.featureReport, ex, last.notesHitPct)
+  }, [sessions])
+  const isNew = sessions.length === 0
 
   // Progresso do nível: exercícios dominados / total e unidades concluídas.
   const totalEx = track.exerciseIds.length
@@ -192,6 +203,7 @@ export default function Exercises() {
         const unitComplete = unit.exerciseIds.length > 0 && unit.exerciseIds.every(isMastered)
         return (
           <Fragment key={unit.id}>
+            {ui === activeUnitIdx && <EvaCoachCard diagnosis={lastDiag} recoReason={reco?.reason} isNew={isNew} />}
             <UnitBlock
               unit={unit}
               state={ui < activeUnitIdx || activeUnitIdx === -1 ? 'done' : ui === activeUnitIdx ? 'active' : 'upcoming'}
@@ -239,10 +251,13 @@ function UnitBlock({
   const exercises = unit.exerciseIds.map((id) => getExercise(id)).filter((e): e is Exercise => Boolean(e))
   const masteredInUnit = exercises.filter((e) => (done[e.id]?.bestScore ?? 0) >= MASTERY).length
   const unitComplete = exercises.length > 0 && masteredInUnit === exercises.length
+  // guidebook: as competências reais que esta unidade treina (distintas).
+  const unitSkills = [...new Set(exercises.flatMap((e) => e.skills))].map((id) => SKILL_BY_ID[id]).filter(Boolean)
+  const [guideOpen, setGuideOpen] = useState(false)
 
   return (
     <section className="unit reveal" data-state={state}>
-      <div className="unit-head">
+      <button type="button" className="unit-head" data-open={guideOpen} onClick={() => setGuideOpen((o) => !o)} aria-expanded={guideOpen}>
         <span className="unit-badge" data-complete={unitComplete}>
           {unitComplete ? <Icon name="crown" size={16} /> : unit.index}
         </span>
@@ -253,7 +268,30 @@ function UnitBlock({
         <span className="unit-prog" title={`${masteredInUnit} de ${exercises.length} dominados`}>
           {masteredInUnit}/{exercises.length}
         </span>
-      </div>
+        <span className="unit-guide-caret" aria-hidden="true">
+          <Icon name="chevron" size={16} />
+        </span>
+      </button>
+
+      {guideOpen && (
+        <div className="unit-guide">
+          <div className="unit-guide-title">
+            <Icon name="spark" size={13} /> O que você vai treinar aqui
+          </div>
+          <div className="unit-guide-skills">
+            {unitSkills.map((s) => (
+              <div className="unit-guide-skill" key={s.id}>
+                <span className="unit-guide-ic" style={{ color: s.color }}>
+                  <Icon name={s.icon} size={15} />
+                </span>
+                <div>
+                  <b>{s.name}</b> — {s.short}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="trk-path unit-path">
         {exercises.map((ex, i) => {
@@ -334,6 +372,42 @@ function MilestoneNode({ milestone, reached }: { milestone: PathMilestone; reach
         <Icon name={reached ? 'play' : 'chevron'} size={18} />
       </span>
     </Link>
+  )
+}
+
+/* ---------------- EVA companheira: coaching real no meio do caminho ---------------- */
+// O que faz o Canto passar do Duolingo: eles têm o mascote fofo; nós temos um
+// coach que ENTENDE sua voz. Aqui a EVA fala da sua última sessão (diagnose) na
+// unidade que você está treinando — o quê + a dica acionável.
+function EvaCoachCard({ diagnosis, recoReason, isNew }: { diagnosis: Diagnosis | null; recoReason?: string; isNew: boolean }) {
+  let headline: string
+  let cue: string | null = null
+  if (diagnosis) {
+    headline = diagnosis.headline
+    cue = diagnosis.insights[0]?.cue ?? null
+  } else if (isNew) {
+    headline = 'Bem-vindo! Vou ouvir sua voz nos primeiros nós e montar um plano só seu — sem pressa.'
+  } else {
+    headline = recoReason ?? 'Continue de onde parou — a cada sessão eu ajusto seu próximo passo.'
+  }
+  return (
+    <div className="trk-eva reveal" data-tone={diagnosis?.tone ?? 'good'}>
+      <span className="trk-eva-avatar">
+        <Icon name="spark" size={20} />
+      </span>
+      <div className="grow">
+        <div className="trk-eva-head">
+          <strong>EVA</strong>
+          <span className="badge">seu coach</span>
+        </div>
+        <p className="trk-eva-msg">{headline}</p>
+        {cue && (
+          <p className="trk-eva-cue">
+            <Icon name="spark" size={12} /> {cue}
+          </p>
+        )}
+      </div>
+    </div>
   )
 }
 

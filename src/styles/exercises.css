@@ -832,10 +832,28 @@
   display: flex;
   align-items: center;
   gap: 14px;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
   padding: 13px 16px;
   border-radius: var(--r-lg);
   background: linear-gradient(180deg, var(--panel-2), var(--panel));
   border: 1px solid var(--hairline);
+  transition: border-color 160ms var(--ease);
+}
+.unit-head:hover {
+  border-color: var(--hairline-strong);
+}
+.unit-guide-caret {
+  flex: none;
+  color: var(--faint);
+  transition: transform 200ms var(--ease);
+}
+.unit-head[data-open='true'] .unit-guide-caret {
+  transform: rotate(90deg);
+  color: var(--gold-2);
 }
 .unit[data-state='active'] .unit-head {
   border-color: rgba(233, 180, 76, 0.4);
@@ -1109,4 +1127,101 @@
   50% {
     transform: translateX(-50%) translateY(-4px);
   }
+}
+
+/* ---------- Guidebook da unidade (o que você vai treinar) ---------- */
+.unit-guide {
+  margin: -4px 0 10px;
+  padding: 14px 16px;
+  border-radius: 0 0 var(--r-lg) var(--r-lg);
+  border: 1px solid var(--hairline);
+  border-top: none;
+  background: rgba(255, 255, 255, 0.02);
+}
+.unit-guide-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--gold-2);
+  margin-bottom: 10px;
+}
+.unit-guide-skills {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.unit-guide-skill {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+.unit-guide-skill b {
+  color: var(--text);
+}
+.unit-guide-ic {
+  flex: none;
+  margin-top: 1px;
+}
+
+/* ---------- EVA companheira do caminho ---------- */
+.trk-eva {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin: 16px 0;
+  padding: 15px 17px;
+  border-radius: var(--r-lg);
+  border: 1px solid rgba(127, 178, 255, 0.22);
+  background: linear-gradient(135deg, rgba(127, 178, 255, 0.08), rgba(196, 139, 255, 0.06));
+}
+.trk-eva[data-tone='great'] {
+  border-color: rgba(87, 214, 166, 0.28);
+  background: linear-gradient(135deg, rgba(87, 214, 166, 0.09), rgba(127, 178, 255, 0.05));
+}
+.trk-eva[data-tone='work'] {
+  border-color: rgba(240, 185, 74, 0.28);
+  background: linear-gradient(135deg, rgba(240, 185, 74, 0.09), rgba(198, 93, 59, 0.05));
+}
+.trk-eva-avatar {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  color: #0d0c0a;
+  background: linear-gradient(135deg, #9ec1ff, #7fb2ff);
+  box-shadow: 0 6px 16px rgba(127, 178, 255, 0.3);
+}
+.trk-eva-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+.trk-eva-head strong {
+  font-family: var(--font-display);
+  font-size: 15px;
+}
+.trk-eva-msg {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.5;
+}
+.trk-eva-cue {
+  margin: 8px 0 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--gold-2);
+  line-height: 1.45;
 }
