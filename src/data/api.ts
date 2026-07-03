@@ -1,6 +1,8 @@
 // Cliente HTTP do backend do Canto: Bearer + refresh automático em 401.
 // O token fica no localStorage; a chave da EVA continua SÓ no proxy (server-side).
 
+import type { MinistryPlan, MinistryPlanItem, VoicePart } from './harmony'
+
 export const API_URL = ((import.meta as unknown as { env: Record<string, string> }).env?.VITE_API_URL as string) || 'http://localhost:3333/api'
 const AUTH_KEY = 'canto.auth.v1'
 
@@ -214,3 +216,65 @@ export interface MemberDetail {
   sessions: import('./types').SessionRecord[]
 }
 export const apiMemberDetail = (id: string): Promise<MemberDetail> => api<MemberDetail>(`/tenant/members/${id}`)
+
+// ---------- Ministério de louvor (S4) ----------
+// O backend guarda o naipe como enum MAIÚSCULO (VoicePart do Prisma); o cliente
+// trabalha em minúsculo. Estes dois mapeadores são a ÚNICA fronteira de case.
+const partToApi = (p: VoicePart): string => p.toUpperCase()
+const partFromApi = (p: string): VoicePart => p.toLowerCase() as VoicePart
+
+// resposta crua do plano (o servidor já devolve a lista plana de itens)
+interface PlanResponse {
+  title: string
+  notes: string | null
+  items: MinistryPlanItem[]
+  updatedAt: string | null
+}
+const mapPlan = (p: PlanResponse): MinistryPlan => ({
+  title: p.title,
+  notes: p.notes ?? undefined,
+  items: p.items ?? [],
+  updatedAt: p.updatedAt ?? undefined,
+})
+
+export interface MemberVoicePart {
+  id: string
+  name: string | null
+  email: string
+  role: string
+  voicePart: VoicePart
+}
+export interface ReadinessRow {
+  id: string
+  name: string | null
+  email: string
+  role: string
+  voicePart: VoicePart
+  lastSessionAt: string | null
+  warmedUpToday: boolean
+  practicedHarmonyRecently: boolean
+  score: number
+  status: 'ready' | 'warm' | 'cold'
+}
+
+export const apiGetMinistryPlan = (): Promise<MinistryPlan> =>
+  api<PlanResponse>('/ministry/plan').then(mapPlan)
+
+export const apiSaveMinistryPlan = (plan: { title?: string; notes?: string; items: MinistryPlanItem[] }): Promise<MinistryPlan> =>
+  api<PlanResponse>('/ministry/plan', { method: 'PUT', body: plan }).then(mapPlan)
+
+export const apiListMinistryMembers = (): Promise<MemberVoicePart[]> =>
+  api<Array<Omit<MemberVoicePart, 'voicePart'> & { voicePart: string }>>('/ministry/members').then((rows) =>
+    rows.map((r) => ({ ...r, voicePart: partFromApi(r.voicePart) })),
+  )
+
+export const apiSetMyVoicePart = (part: VoicePart): Promise<unknown> =>
+  api('/ministry/parts/me', { method: 'PUT', body: { voicePart: partToApi(part) } })
+
+export const apiAssignVoicePart = (userId: string, part: VoicePart): Promise<unknown> =>
+  api(`/ministry/members/${encodeURIComponent(userId)}/part`, { method: 'PUT', body: { voicePart: partToApi(part) } })
+
+export const apiGetReadiness = (): Promise<ReadinessRow[]> =>
+  api<Array<Omit<ReadinessRow, 'voicePart'> & { voicePart: string }>>('/ministry/readiness').then((rows) =>
+    rows.map((r) => ({ ...r, voicePart: partFromApi(r.voicePart) })),
+  )
