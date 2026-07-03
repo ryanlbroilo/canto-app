@@ -241,6 +241,30 @@ scoring reusado do S4. **Nota**: o loop do relógio (RAF) NÃO roda no preview
 headless (aba oculta → `requestAnimationFrame` pausado) — vale pra todos os
 runners (Sequence/Harmonia/Música); funciona no browser visível. Review adversarial.
 
+### 5.4 — Caminho estilo Duolingo "e mais" (bônus, pós-S6)
+
+Rodada de UX pra tornar o caminho de aprendizado o coração viciante do app — e
+**passar o Duolingo** onde ele é raso. Tese: engajamento do Duolingo + profundidade
+real (a EVA que explica) + **música de verdade**. O caminho já existia forte em
+`/exercicios` (aba "Caminho": seções, unidades, path serpenteado, coroas, troféus,
+revisão espaçada); estas 3 jogadas foram por cima:
+
+1. **Música tecida no caminho** (`src/data/pathMilestones.ts`, `Exercises.tsx`) —
+   9 marcos de recompensa (3/nível) entre unidades levam a **cantar uma música**
+   (S6) ou **achar a voz na harmonia** (S4), casados à dificuldade. Brilham quando
+   a unidade anterior é dominada. É o clímax que idioma nenhum entrega.
+2. **Caminho-como-home + nó ativo** (redesign 2022 do Duolingo) — abrir
+   `/exercicios` rola até o nó ativo (`scrollIntoView`) com bolha **"COMEÇAR"**
+   pulsando; a "Sua trilha" do Dashboard virou um **mini-caminho serpenteado**
+   (não a escada horizontal) com o nó ativo em "Continuar".
+3. **EVA companheira** — card da EVA na unidade ativa com **coaching real da última
+   sessão** (`coaching.diagnose`: o quê + a dica), não filler de mascote; e o
+   cabeçalho da unidade abre um **guidebook** com as competências que ela treina.
+
+Também: **fix** do bug visual da "Sua trilha" (a escada empilhava os 86 nós do
+nível inteiro — agora janela de nós). Tudo verificado por medição de layout
+(redimensionando o viewport pra furar o preview headless de aba oculta).
+
 ### Para ATIVAR os pagamentos (S2) — só o fundador pode
 1. No dashboard do Stripe, criar **6 preços** (Pro / Igreja / Professor × mensal/anual).
 2. Em `server/.env`:
