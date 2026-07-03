@@ -278,3 +278,22 @@ export const apiGetReadiness = (): Promise<ReadinessRow[]> =>
   api<Array<Omit<ReadinessRow, 'voicePart'> & { voicePart: string }>>('/ministry/readiness').then((rows) =>
     rows.map((r) => ({ ...r, voicePart: partFromApi(r.voicePart) })),
   )
+
+// ---------- Comunidade: leaderboard / liga do ministério (S5) ----------
+export interface LeaderboardRow {
+  id: string
+  name: string | null
+  email: string
+  role: string
+  voicePart: VoicePart
+  /** XP ganho na semana ISO atual (o placar da liga) */
+  weeklyXp: number
+  weeklySessions: number
+  totalXp: number
+  lastSessionAt: string | null
+  currentStreak: number
+}
+export const apiLeaderboard = (): Promise<LeaderboardRow[]> =>
+  api<Array<Omit<LeaderboardRow, 'voicePart'> & { voicePart: string }>>('/tenant/leaderboard').then((rows) =>
+    rows.map((r) => ({ ...r, voicePart: partFromApi(r.voicePart) })),
+  )

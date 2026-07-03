@@ -1,0 +1,86 @@
+/* ============================================================
+   Comunidade — liga do ministério (ranking semanal) + streak social.
+   Só o que não vem de components.css/team.css. Reusa .member-avatar,
+   .member-id, .badge, os tokens.
+   ============================================================ */
+
+.lb-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+.lb-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--hairline);
+  background: rgba(255, 255, 255, 0.02);
+}
+.lb-row[data-me='true'] {
+  border-color: rgba(233, 180, 76, 0.4);
+  background: rgba(233, 180, 76, 0.07);
+}
+.lb-rank {
+  width: 30px;
+  flex: none;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.lb-rank[data-top='1'] {
+  color: #f3cd73;
+}
+.lb-rank[data-top='2'] {
+  color: #d3d6d9;
+}
+.lb-rank[data-top='3'] {
+  color: #cd8a58;
+}
+.lb-metric {
+  margin-left: auto;
+  text-align: right;
+  flex: none;
+}
+.lb-metric b {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 20px;
+  line-height: 1;
+  color: var(--gold-2);
+}
+.lb-metric span {
+  font-size: 11px;
+  color: var(--muted);
+}
+.lb-flame {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  flex: none;
+}
+.lb-flame[data-hot='true'] {
+  color: var(--ember);
+}
+.risk-tag {
+  font-size: 11px;
+  color: var(--close);
+  border: 1px solid rgba(240, 185, 74, 0.3);
+  border-radius: var(--r-pill);
+  padding: 2px 9px;
+  white-space: nowrap;
+}
+.lb-share {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
