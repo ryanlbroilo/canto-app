@@ -10,6 +10,7 @@ import { envValidationSchema } from './config/env.validation'
 import { EvaModule } from './eva/eva.module'
 import { HealthModule } from './health/health.module'
 import { InvitesModule } from './invites/invites.module'
+import { MinistryModule } from './ministry/ministry.module'
 import { PrismaModule } from './prisma/prisma.module'
 import { TenantModule } from './tenant/tenant.module'
 import { bullRootConfig } from './queue/bull-config'
@@ -31,6 +32,7 @@ import { StateModule } from './state/state.module'
     StateModule,
     InvitesModule,
     TenantModule,
+    MinistryModule,
     EvaModule,
     BillingModule,
     HealthModule,

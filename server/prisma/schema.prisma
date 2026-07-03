@@ -16,6 +16,18 @@ enum Role {
   MEMBER
 }
 
+// Naipe (voz) de um membro no ministério de louvor. Rótulos de louvor + SATB.
+enum VoicePart {
+  MELODIA
+  VOZ2
+  VOZ3
+  SOPRANO
+  CONTRALTO
+  TENOR
+  BAIXO
+  UNASSIGNED
+}
+
 model Tenant {
   id           String         @id @default(cuid())
   name         String
@@ -25,6 +37,7 @@ model Tenant {
   sessions     VocalSession[]
   invites      Invite[]
   subscription Subscription?
+  ministryPlan MinistryPlan?
 }
 
 // Assinatura por TENANT (não por usuário): o tenant tem o plano e todos os
@@ -77,6 +90,7 @@ model User {
   refreshTokens RefreshToken[]
   sessions     VocalSession[]
   state        UserState?
+  ministryMember MinistryMember?
 
   // e-mail é único DENTRO do tenant (mesmo e-mail pode existir em tenants diferentes)
   @@unique([tenantId, email])
@@ -153,4 +167,35 @@ model JobRun {
   createdAt DateTime @default(now())
 
   @@index([queue, status])
+}
+
+// Plano de ensaio compartilhado do ministério (1 por tenant). O líder monta o
+// aquecimento (ids de exercícios da biblioteca) + o set de harmonia (drills);
+// todos os membros leem. Guardado em DUAS colunas Json — o front recebe uma
+// lista plana de itens (o api.ts mescla/separa por tipo).
+model MinistryPlan {
+  id          String   @id @default(cuid())
+  tenantId    String   @unique
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  title       String   @default("Ensaio do ministério")
+  notes       String?
+  warmup      Json? // string[] de exerciseIds da biblioteca (aquecimento)
+  harmonySet  Json? // [{ ref, label }] dos drills de harmonia (set de encaixe)
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Naipe (voz) de cada membro no ministério (1 por usuário). Aditivo: usuários
+// sem registro caem em UNASSIGNED.
+model MinistryMember {
+  id        String    @id @default(cuid())
+  userId    String    @unique
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenantId  String
+  voicePart VoicePart @default(UNASSIGNED)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([tenantId])
 }
