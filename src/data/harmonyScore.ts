@@ -41,7 +41,10 @@ const MISS: NoteScore = { accuracy: 0, blend: 0, noteScore: 0, hit: false, absMe
  * @param steadySamples firmeza perceptual 0..1 (PitchFrame.steadiness), por frame
  */
 export function scoreNote(centsSamples: number[], steadySamples: number[]): NoteScore {
-  if (centsSamples.length < 8) return MISS
+  // Mínimo pra média/desvio fazerem sentido. Baixo (4) de propósito: notas CURTAS
+  // (melodias rápidas) rendem poucas amostras — quem julga "cantou o suficiente" é
+  // a COBERTURA no score-following (SongPlayer), não este piso.
+  if (centsSamples.length < 4) return MISS
   const absMean = mean(centsSamples.map(Math.abs))
   const jitter = stddev(centsSamples)
   const steadyAvg = clamp01(mean(steadySamples))
