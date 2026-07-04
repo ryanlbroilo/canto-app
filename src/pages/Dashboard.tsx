@@ -1,4 +1,5 @@
 import '../styles/dashboard.css'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../app/AppContext'
 import { AudioBlob } from '../components/audio/AudioBlob'
@@ -9,7 +10,7 @@ import { SKILL_BY_ID } from '../data/skills'
 import { TRACKS, trackForLevel } from '../data/tracks'
 import { ACHIEVEMENTS } from '../data/achievements'
 import { getExercise } from '../data/exercises'
-import { getFreezeState } from '../data/store'
+import { getFreezeState, getWeeklyGoal, setWeeklyGoal, weekPracticeDays } from '../data/store'
 import { useEntitlement } from '../hooks/useEntitlement'
 import type { ExerciseKind, TrackLevel } from '../data/types'
 
@@ -61,6 +62,14 @@ export default function Dashboard() {
     gamification
   const { allowed: canMinistry } = useEntitlement('team_admin')
   const freeze = getFreezeState()
+  const [goalTarget, setGoalTarget] = useState(getWeeklyGoal().target)
+  const weekDays = weekPracticeDays(sessions)
+  const goalPct = Math.min(100, Math.round((weekDays / goalTarget) * 100))
+  const cycleGoal = () => {
+    const n = goalTarget >= 7 ? 3 : goalTarget + 2
+    setWeeklyGoal(n)
+    setGoalTarget(n)
+  }
 
   const isNew = sessions.length === 0
   const week = last7(streak.days)
@@ -376,6 +385,15 @@ export default function Dashboard() {
                 </div>
                 <div className="dsh-stat-label">Oitavas</div>
               </div>
+            </div>
+            <div className="dsh-goal">
+              <div className="dsh-goal-top">
+                <span className="dsh-goal-label">Meta da semana {weekDays >= goalTarget && '✓'}</span>
+                <button type="button" className="dsh-goal-cycle" onClick={cycleGoal} title="Toque para ajustar (3 / 5 / 7 dias)">
+                  {weekDays}/{goalTarget} dias
+                </button>
+              </div>
+              <div className="bar"><div className="bar-fill" style={{ width: `${goalPct}%` }} /></div>
             </div>
             <hr className="dsh-hr" />
             <div className="dsh-week">

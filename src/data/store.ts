@@ -17,6 +17,8 @@ const K = {
   voicePart: 'canto.voicePart.v1',
   ministryPlan: 'canto.ministryPlan.v1',
   freeze: 'canto.freeze.v1',
+  weeklyGoal: 'canto.weeklyGoal.v1',
+  reminder: 'canto.reminder.v1',
 }
 
 /** Conquista desbloqueada, com o momento em que caiu (para "novo!" na UI). */
@@ -160,7 +162,7 @@ export function mergeServerPlan(plan: MinistryPlan | null): void {
 
 /** Limpa os dados locais do usuário (usar no logout, para não vazar entre contas). */
 export function clearUserData(): void {
-  for (const k of [K.sessions, K.baseline, K.rangeHistory, K.achievements, K.seenOnboarding, K.profile, K.reviewsDone, K.voicePart, K.ministryPlan, K.freeze]) {
+  for (const k of [K.sessions, K.baseline, K.rangeHistory, K.achievements, K.seenOnboarding, K.profile, K.reviewsDone, K.voicePart, K.ministryPlan, K.freeze, K.weeklyGoal, K.reminder]) {
     try {
       localStorage.removeItem(k)
     } catch {
@@ -284,6 +286,33 @@ export function reconcileStreak(): FreezeState {
   if (changed) write(K.freeze, st)
   return st
 }
+
+// ---------- Meta da semana (commitment device; pesquisa: aposta de meta ~+14% D14) ----------
+export interface WeeklyGoal {
+  /** dias de treino por semana (3, 5 ou 7) */
+  target: number
+}
+const DEFAULT_GOAL: WeeklyGoal = { target: 5 }
+export const getWeeklyGoal = (): WeeklyGoal => ({ ...DEFAULT_GOAL, ...read<Partial<WeeklyGoal>>(K.weeklyGoal, {}) })
+export const setWeeklyGoal = (target: number): void => write(K.weeklyGoal, { target })
+
+/** Dias distintos praticados na semana ISO atual (UTC, segunda→domingo). */
+export function weekPracticeDays(sessions: { dateISO: string }[], nowMs = Date.now()): number {
+  const d = new Date(nowMs)
+  const mondayOffset = (d.getUTCDay() + 6) % 7
+  const start = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - mondayOffset)).toISOString().slice(0, 10)
+  return new Set(sessions.map((s) => dayKey(s.dateISO)).filter((k) => k >= start)).size
+}
+
+// ---------- Lembrete diário (opt-in; disparo real só com push/PWA, ver S8) ----------
+export interface ReminderPref {
+  enabled: boolean
+  /** hora local 0..23 */
+  hour: number
+}
+const DEFAULT_REMINDER: ReminderPref = { enabled: false, hour: 19 }
+export const getReminder = (): ReminderPref => ({ ...DEFAULT_REMINDER, ...read<Partial<ReminderPref>>(K.reminder, {}) })
+export const setReminder = (r: ReminderPref): void => write(K.reminder, r)
 
 // ---------- Conquistas desbloqueadas ----------
 export const getUnlockedAchievements = (): UnlockedAchievement[] =>
