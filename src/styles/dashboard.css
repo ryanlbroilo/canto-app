@@ -409,10 +409,12 @@
   font-weight: 600;
 }
 .dsh-mp-cta {
+  /* Fica AO LADO do dot, no lado oposto ao nome, centralizado na vertical.
+     Assim nunca colide com o nome (que fica do outro lado) — imune a nome
+     longo / quebra de linha. Antes flutuava acima do dot e sobrepunha o nome. */
   position: absolute;
-  bottom: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
+  top: 50%;
+  transform: translateY(-50%);
   padding: 3px 9px;
   border-radius: var(--r-pill);
   background: linear-gradient(135deg, var(--gold-2), var(--gold-deep));
@@ -423,6 +425,14 @@
   text-transform: uppercase;
   white-space: nowrap;
   box-shadow: 0 4px 12px rgba(233, 180, 76, 0.4);
+  z-index: 2;
+}
+/* nome à direita (side 'l') → CTA à esquerda do dot; e vice-versa */
+.dsh-mp-node[data-side='l'] .dsh-mp-cta {
+  right: calc(100% + 8px);
+}
+.dsh-mp-node[data-side='r'] .dsh-mp-cta {
+  left: calc(100% + 8px);
 }
 
 /* ---------- Skills (mini) ---------- */
