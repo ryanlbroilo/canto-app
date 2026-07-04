@@ -30,6 +30,8 @@ type IconName =
   | 'church'
   | 'note'
   | 'shield'
+  | 'mail'
+  | 'download'
 
 const PATHS: Record<IconName, JSX.Element> = {
   home: <path d="M3 10.5 12 3l9 7.5M5 9v11h5v-6h4v6h5V9" />,
@@ -130,6 +132,13 @@ const PATHS: Record<IconName, JSX.Element> = {
     </>
   ),
   shield: <path d="M12 3l7 3v5c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z" />,
+  mail: (
+    <>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="M4 7l8 6 8-6" />
+    </>
+  ),
+  download: <path d="M12 3v12M8 11l4 4 4-4M5 20h14" />,
 }
 
 export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {

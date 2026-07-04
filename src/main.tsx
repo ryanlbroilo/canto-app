@@ -4,7 +4,13 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AppProvider } from './app/AppContext'
 import { AuthProvider, useAuth } from './app/AuthContext'
 import { AppShell } from './app/AppShell'
+import { ErrorBoundary } from './app/ErrorBoundary'
+import Landing from './pages/Landing'
 import Auth from './pages/Auth'
+import VerifyEmail from './pages/VerifyEmail'
+import ResetRequest from './pages/ResetRequest'
+import ResetPassword from './pages/ResetPassword'
+import Privacy from './pages/Privacy'
 import Dashboard from './pages/Dashboard'
 import Practice from './pages/Practice'
 import RangeTest from './pages/RangeTest'
@@ -35,18 +41,29 @@ function RequireAuth({ children }: { children: ReactNode }) {
       </div>
     )
   }
-  if (status === 'anon') return <Navigate to="/auth" replace />
+  if (status === 'anon') return <Navigate to="/bem-vindo" replace />
   return <>{children}</>
 }
 
 // Sem React.StrictMode: o StrictMode monta efeitos duas vezes em dev, o que
 // dispararia getUserMedia / AudioContext em duplicidade.
-createRoot(document.getElementById('root')!).render(
+// Root em singleton no window: o HMR reaproveita o mesmo root em vez de chamar
+// createRoot() de novo no mesmo nó (o que dispara o warning do React 18).
+const container = document.getElementById('root')!
+const w = window as unknown as { __cantoRoot?: ReturnType<typeof createRoot> }
+const root = w.__cantoRoot ?? (w.__cantoRoot = createRoot(container))
+root.render(
+  <ErrorBoundary>
   <BrowserRouter>
     <AuthProvider>
       <AppProvider>
         <Routes>
+          <Route path="/bem-vindo" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/verificar" element={<VerifyEmail />} />
+          <Route path="/recuperar" element={<ResetRequest />} />
+          <Route path="/redefinir" element={<ResetPassword />} />
+          <Route path="/privacidade" element={<Privacy />} />
           <Route path="/onboarding" element={<RequireAuth><Onboarding /></RequireAuth>} />
           <Route element={<RequireAuth><AppShell /></RequireAuth>}>
             <Route path="/" element={<Dashboard />} />
@@ -74,5 +91,14 @@ createRoot(document.getElementById('root')!).render(
         </Routes>
       </AppProvider>
     </AuthProvider>
-  </BrowserRouter>,
+  </BrowserRouter>
+  </ErrorBoundary>,
 )
+
+// PWA: registra o service worker só em produção (em dev, o HMR do Vite e o SW
+// brigam). O SW nunca cacheia a API nem o áudio — ver public/sw.js.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => undefined)
+  })
+}

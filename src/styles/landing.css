@@ -1,0 +1,314 @@
+/* ============================================================
+   Landing pública (aquisição)
+   ============================================================ */
+.lp {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 20px clamp(18px, 5vw, 40px) 60px;
+  padding-left: max(clamp(18px, 5vw, 40px), env(safe-area-inset-left, 0px));
+  padding-right: max(clamp(18px, 5vw, 40px), env(safe-area-inset-right, 0px));
+}
+
+/* nav */
+.lp-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0 4px;
+  padding-top: calc(8px + env(safe-area-inset-top, 0px));
+}
+.lp-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.lp-nav-login {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 8px 16px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--hairline);
+  transition: color 140ms var(--ease), border-color 140ms var(--ease);
+}
+.lp-nav-login:hover {
+  color: var(--text);
+  border-color: var(--gold-2);
+}
+
+/* herói */
+.lp-hero {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 36px;
+  align-items: center;
+  padding: clamp(36px, 8vw, 88px) 0 clamp(30px, 6vw, 64px);
+}
+.lp-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--good);
+  background: rgba(87, 214, 166, 0.09);
+  border: 1px solid rgba(87, 214, 166, 0.24);
+  padding: 6px 12px;
+  border-radius: var(--r-pill);
+}
+.lp-title {
+  font-family: var(--font-display);
+  font-size: clamp(38px, 7vw, 64px);
+  font-weight: 600;
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  margin: 18px 0 0;
+}
+.lp-title em {
+  font-style: italic;
+  color: var(--gold-2);
+}
+.lp-sub {
+  color: var(--muted);
+  font-size: clamp(15px, 2vw, 17.5px);
+  line-height: 1.6;
+  max-width: 46ch;
+  margin: 18px 0 0;
+}
+.lp-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+.lp-cta-main {
+  height: 50px;
+  font-size: 15.5px;
+  padding: 0 24px;
+  gap: 6px;
+}
+.lp-cta-alt {
+  height: 50px;
+  font-size: 15px;
+  padding: 0 22px;
+}
+.lp-note {
+  color: var(--faint);
+  font-size: 12.5px;
+  margin: 16px 0 0;
+}
+
+/* arte do herói: anéis concêntricos (o "o" de Canto / alvo de afinação) */
+.lp-hero-art {
+  position: relative;
+  aspect-ratio: 1;
+  max-width: 380px;
+  width: 100%;
+  margin: 0 auto;
+  display: grid;
+  place-items: center;
+}
+.lp-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid var(--hairline);
+  inset: 0;
+  place-self: center;
+}
+.lp-ring-1 {
+  width: 42%;
+  height: 42%;
+  border-color: rgba(233, 180, 76, 0.85);
+  box-shadow: 0 0 40px rgba(233, 180, 76, 0.25);
+  animation: lpBreathe 5s var(--ease) infinite;
+}
+.lp-ring-2 {
+  width: 68%;
+  height: 68%;
+  border-color: rgba(233, 180, 76, 0.4);
+  animation: lpBreathe 5s var(--ease) infinite 0.4s;
+}
+.lp-ring-3 {
+  width: 94%;
+  height: 94%;
+  border-color: rgba(233, 180, 76, 0.16);
+  animation: lpBreathe 5s var(--ease) infinite 0.8s;
+}
+.lp-ring-dot {
+  width: 15%;
+  height: 15%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #f3cd7e, var(--gold));
+  box-shadow: 0 0 28px rgba(233, 180, 76, 0.6);
+}
+@keyframes lpBreathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 0.82;
+  }
+}
+
+/* passos */
+.lp-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-top: 20px;
+}
+.lp-step {
+  padding: 24px 22px;
+}
+.lp-step-ico {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  color: var(--gold-2);
+  background: rgba(233, 180, 76, 0.1);
+  border: 1px solid var(--hairline);
+}
+.lp-step h3 {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  margin: 16px 0 8px;
+}
+.lp-step p {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+/* privacidade */
+.lp-privacy {
+  text-align: center;
+  max-width: 640px;
+  margin: clamp(48px, 9vw, 96px) auto;
+}
+.lp-privacy-ico {
+  margin: 0 auto 18px;
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+}
+.lp-privacy h2 {
+  font-family: var(--font-display);
+  font-size: clamp(26px, 4vw, 34px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.lp-privacy p {
+  color: var(--muted);
+  font-size: 15.5px;
+  line-height: 1.65;
+  margin-top: 14px;
+}
+.lp-privacy strong {
+  color: var(--text);
+}
+
+/* worship */
+.lp-worship {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 32px;
+  background: linear-gradient(135deg, rgba(233, 180, 76, 0.08), rgba(233, 180, 76, 0.02));
+  border-color: rgba(233, 180, 76, 0.22);
+  flex-wrap: wrap;
+}
+.lp-worship h2 {
+  font-family: var(--font-display);
+  font-size: clamp(22px, 3.4vw, 28px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 12px 0 8px;
+}
+.lp-worship p {
+  color: var(--muted);
+  font-size: 14.5px;
+  line-height: 1.6;
+  max-width: 52ch;
+}
+.lp-worship .btn {
+  flex: none;
+}
+
+/* CTA final */
+.lp-final {
+  text-align: center;
+  margin: clamp(56px, 10vw, 104px) auto clamp(40px, 7vw, 72px);
+}
+.lp-final h2 {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 5vw, 42px);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  margin-bottom: 26px;
+}
+
+/* rodapé */
+.lp-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding-top: 26px;
+  border-top: 1px solid var(--hairline);
+  color: var(--faint);
+  font-size: 13px;
+}
+.lp-foot-links {
+  display: flex;
+  gap: 20px;
+}
+.lp-foot-links a {
+  color: var(--muted);
+  text-decoration: none;
+}
+.lp-foot-links a:hover {
+  color: var(--gold-2);
+}
+
+/* mobile */
+@media (max-width: 800px) {
+  .lp-hero {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+  .lp-hero-copy {
+    order: 2;
+  }
+  .lp-hero-art {
+    order: 1;
+    max-width: 260px;
+  }
+  .lp-eyebrow {
+    margin: 0 auto;
+  }
+  .lp-sub {
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .lp-cta {
+    justify-content: center;
+  }
+  .lp-steps {
+    grid-template-columns: 1fr;
+  }
+  .lp-worship {
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+  }
+}

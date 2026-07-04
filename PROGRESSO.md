@@ -385,16 +385,64 @@ a43d711 feat(saas): sync completo do estado do usuário
 
 ---
 
-## 9. Próximo passo sugerido
+## 9. Go-live + Mobile — FEITO nesta fase (S8)
 
-**S8 — Deploy de produção.** Hospedagem + domínio + TLS, e-mail (verificação/
-reset de senha), LGPD (política, consentimento, export/delete). O produto está
-denso (S1–S7 feitos) e device-local (privacidade é moat) — falta o wrapper de
-produção pra abrir ao público. Ativar as chaves reais (Stripe §"ATIVAR pagamentos"
-e EVA §"ATIVAR a EVA"). Alternativa: **S9** (validação acadêmica USP/CEV) se o foco
-for pesquisa antes do lançamento. Verificar via `preview_eval` (RAF não roda no
-preview headless) e PowerShell p/ Docker.
+O wrapper de produção que faltava agora existe e foi **verificado ponta a ponta**
+(backend real rodando + curl + preview do front). Resumo do que entrou:
 
-Ideias de aprofundamento do score-following (pós-S7, quando voltar às músicas):
-melodias completas (várias frases), detecção de onset fina, trilha de
-acompanhamento tocando junto, e catálogo maior (CCLI quando ligar o licenciamento).
+### Autenticação de produção (GL-1)
+- **Verificação de e-mail** e **reset de senha** completos. Tabela única
+  `AuthToken` (enum `EMAIL_VERIFICATION` | `PASSWORD_RESET`), guarda só o **hash
+  sha256** do token; o cru só vive no link do e-mail. Consumo **atômico**
+  (`updateMany where usedAt:null`) — sem replay. Reset **revoga todas as sessões**.
+  Request-reset **não vaza** existência de conta. Rotas novas: `verify-email`,
+  `resend-verification` (throttle 3/min), `request-reset`, `reset-password`.
+- **Mailer plugável** (`server/src/mail/`): `EMAIL_PROVIDER=dev` **loga** o link no
+  console; `=smtp` envia via nodemailer. O mailer **nunca derruba** o cadastro
+  (try/catch + degradação). Links apontam pra `${APP_URL}/verificar|redefinir`.
+- Front: páginas `/verificar`, `/recuperar`, `/redefinir` + banner "confirme seu
+  e-mail" com reenvio nas Configurações. `AuthUserInfo.emailVerified` no cliente.
+
+### LGPD (GL-2)
+- **Exportar** (`GET /me/export`) e **excluir conta** (`DELETE /me`) — verificado
+  que o export **não vaza** passwordHash/segredos Stripe e é escopado por usuário/
+  tenant. Delete em transação: OWNER sozinho apaga o tenant (cascata); OWNER com
+  membros → 409; membro apaga o próprio usuário.
+- **Consentimento** no cadastro (checkbox obrigatório → `consentAt` no banco,
+  confirmado no export). **Política de Privacidade** pública em `/privacidade`.
+
+### Higiene de produção (GL-3)
+- **ErrorBoundary** (fallback recuperável, sem tela branca). Root em **singleton**
+  (mata o warning de `createRoot` no HMR). Service worker só em produção.
+
+### Mobile (MOB-1/MOB-2) — "iniciar o app"
+- **PWA instalável**: `manifest.webmanifest` + `public/sw.js` (cache de app-shell
+  conservador — **nunca** cacheia `/api` nem quebra áudio/wasm) + ícones PNG reais
+  (192/512/maskable, gerados proceduralmente: anel dourado = o "o" de Cant**o**).
+- **Decisão RN vs Flutter → Capacitor** (`capacitor.config.ts`, `MOBILE.md`).
+  Motivo decisivo: o motor DSP (Rust/WASM + AudioWorklet + ONNX) roda no WebView
+  **sem reescrever nada**; RN/Flutter exigiriam reescrever o núcleo de áudio.
+  Mesmo `dist/` → app de loja. Scripts `cap:sync|cap:android|cap:ios`.
+- **Safe-area insets** (notch) no shell — polimento mobile-web.
+
+### ⚠️ O que o FUNDADOR precisa prover pro go-live real (nada disso é código)
+1. **Domínio + TLS** (ex.: `app.canto…` + `api.canto…`), atrás de HTTPS.
+2. **SMTP** de verdade: criar conta (Resend/SendGrid/SES/Mailgun), pôr
+   `EMAIL_PROVIDER=smtp` + `SMTP_*` no `server/.env`. Sem isso, e-mails só logam.
+3. **`APP_URL`** = URL pública do front (entra nos links de e-mail) e **`CORS_ORIGIN`**
+   = domínio do front (hoje `*`). **Trocar os `JWT_*_SECRET`** por segredos fortes.
+4. **Caixa `privacidade@canto.app`** (ou trocar o contato em `src/pages/Privacy.tsx`).
+5. **Stripe** e **EVA Hub**: ativar chaves reais (ver §"ATIVAR" respectivas) — sem
+   elas o app segue no free + coach rule-based.
+6. **Lojas** (quando publicar): conta Apple Developer (US$99/ano) + Google Play
+   (US$25). `npx cap add android|ios`, permissão de microfone (ver `MOBILE.md`),
+   build com `VITE_API_URL` de produção.
+
+## 10. Próximo passo sugerido
+
+Com o go-live pronto no código, o caminho crítico é **infra do fundador** (itens 1–4
+acima) para abrir ao público — nenhuma linha de código bloqueia mais. Depois:
+**landing page** de aquisição (POL-1, ainda pendente) e/ou **S9** (validação
+acadêmica USP/CEV). Aprofundar score-following quando voltar às músicas: melodias
+completas, onset fino, acompanhamento tocando junto, catálogo maior (CCLI ao ligar
+licenciamento). Verificar via `preview_eval` + PowerShell p/ Docker.

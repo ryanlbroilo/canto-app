@@ -13,6 +13,10 @@ dsp/Cargo.lock
 # binários do ORT (regeneráveis: npm run sync:ort)
 public/ort/
 
+# plataformas nativas do Capacitor (geradas por `npx cap add` — regeneráveis)
+/android
+/ios
+
 # segredos locais (EVA Hub) — NUNCA commitar chaves vivas
 .env
 .env.local

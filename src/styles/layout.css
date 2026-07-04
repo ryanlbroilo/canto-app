@@ -114,13 +114,17 @@
   overflow: hidden;
 }
 .topbar {
-  height: var(--topbar-h);
+  /* +env: no iPhone/Android com notch, empurra a barra abaixo do recorte.
+     Em telas sem notch, env(...) = 0 → sem efeito colateral. */
+  height: calc(var(--topbar-h) + env(safe-area-inset-top, 0px));
+  padding-top: env(safe-area-inset-top, 0px);
   flex: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 0 28px;
+  padding-left: max(28px, env(safe-area-inset-left, 0px));
+  padding-right: max(28px, env(safe-area-inset-right, 0px));
   border-bottom: 1px solid var(--hairline);
   background: rgba(13, 12, 10, 0.55);
   backdrop-filter: blur(10px);
@@ -182,6 +186,7 @@
   max-width: var(--page-max);
   margin: 0 auto;
   padding: 30px 28px 56px;
+  padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
 }
 .page-head {
   display: flex;
@@ -254,5 +259,8 @@
   }
   .page {
     padding: 22px 18px 48px;
+    padding-left: max(18px, env(safe-area-inset-left, 0px));
+    padding-right: max(18px, env(safe-area-inset-right, 0px));
+    padding-bottom: calc(48px + env(safe-area-inset-bottom, 0px));
   }
 }

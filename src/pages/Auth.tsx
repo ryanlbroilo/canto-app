@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import '../styles/auth.css'
 import { useAuth } from '../app/AuthContext'
 import { useApp } from '../app/AppContext'
@@ -13,7 +13,10 @@ export default function Auth() {
   const { reload } = useApp()
   const navigate = useNavigate()
 
-  const [mode, setMode] = useState<'login' | 'register'>('login')
+  // A landing manda ?modo=criar pra já abrir no cadastro.
+  const [mode, setMode] = useState<'login' | 'register'>(
+    new URLSearchParams(window.location.search).get('modo') === 'criar' ? 'register' : 'login',
+  )
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -22,6 +25,7 @@ export default function Auth() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [consent, setConsent] = useState(false)
 
   // Convite (?convite=TOKEN): professor/igreja convidando alguém pro time.
   const [inviteToken] = useState(() => new URLSearchParams(window.location.search).get('convite') || '')
@@ -47,16 +51,21 @@ export default function Auth() {
   async function submit(e: FormEvent) {
     e.preventDefault()
     if (loading) return
+    const creating = joining || mode === 'register'
+    if (creating && !consent) {
+      setError('Marque o aceite da Política de Privacidade para continuar.')
+      return
+    }
     setLoading(true)
     setError(null)
     try {
       if (joining) {
-        await registerWithInvite({ token: inviteToken, email: email.trim(), password, name: name.trim() || undefined })
+        await registerWithInvite({ token: inviteToken, email: email.trim(), password, name: name.trim() || undefined, consent })
       } else if (mode === 'login') {
         await login({ tenantSlug: tenantSlug.trim().toLowerCase(), email: email.trim(), password })
         localStorage.setItem(LAST_TENANT, tenantSlug.trim().toLowerCase())
       } else {
-        await register({ tenantName: tenantName.trim(), email: email.trim(), password, name: name.trim() || undefined })
+        await register({ tenantName: tenantName.trim(), email: email.trim(), password, name: name.trim() || undefined, consent })
       }
       reload()
       navigate('/', { replace: true })
@@ -133,6 +142,27 @@ export default function Auth() {
           <span>Senha</span>
           <input className="auth-input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={joining || mode === 'register' ? 'mínimo 8 caracteres' : '••••••••'} required minLength={joining || mode === 'register' ? 8 : 1} autoComplete={mode === 'login' && !joining ? 'current-password' : 'new-password'} />
         </label>
+
+        {(joining || mode === 'register') && (
+          <label className="auth-consent">
+            <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
+            <span>
+              Li e aceito a{' '}
+              <Link to="/privacidade" target="_blank" rel="noreferrer" className="auth-link">
+                Política de Privacidade
+              </Link>{' '}
+              (LGPD).
+            </span>
+          </label>
+        )}
+
+        {!joining && mode === 'login' && (
+          <p className="auth-forgot">
+            <Link to="/recuperar" className="auth-link">
+              Esqueci minha senha
+            </Link>
+          </p>
+        )}
 
         {error && <p className="auth-error">{error}</p>}
 

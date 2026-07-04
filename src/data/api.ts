@@ -13,6 +13,7 @@ export interface AuthUserInfo {
   role: string
   tenantId: string
   tenantSlug: string
+  emailVerified: boolean
 }
 interface Tokens {
   accessToken: string
@@ -125,6 +126,7 @@ export interface RegisterInput {
   email: string
   password: string
   name?: string
+  consent?: boolean
 }
 export interface LoginInput {
   tenantSlug: string
@@ -150,6 +152,35 @@ export async function apiLogout(): Promise<void> {
 }
 export const apiMe = (): Promise<AuthUserInfo> => api<AuthUserInfo>('/auth/me')
 
+// ---------- Verificação de e-mail + reset de senha (go-live) ----------
+export const apiVerifyEmail = (token: string): Promise<{ ok: boolean }> =>
+  api<{ ok: boolean }>('/auth/verify-email', { method: 'POST', body: { token }, auth: false })
+
+/** Reenvia o e-mail de confirmação para o usuário logado. */
+export const apiResendVerification = (): Promise<{ ok: boolean }> =>
+  api<{ ok: boolean }>('/auth/resend-verification', { method: 'POST', body: {} })
+
+/** Pede o e-mail de reset. Nunca vaza existência — sempre resolve. */
+export const apiRequestReset = (tenantSlug: string, email: string): Promise<{ ok: boolean }> =>
+  api<{ ok: boolean }>('/auth/request-reset', { method: 'POST', body: { tenantSlug, email }, auth: false })
+
+export const apiResetPassword = (token: string, password: string): Promise<{ ok: boolean }> =>
+  api<{ ok: boolean }>('/auth/reset-password', { method: 'POST', body: { token, password }, auth: false })
+
+/** Atualiza o usuário em memória (ex.: após verificar e-mail sem re-login). */
+export function patchCurrentUser(patch: Partial<AuthUserInfo>): void {
+  if (!memAuth) return
+  saveAuth({ ...memAuth, user: { ...memAuth.user, ...patch } })
+}
+
+// ---------- LGPD: exportar / excluir os próprios dados ----------
+export const apiExportMyData = (): Promise<unknown> => api<unknown>('/me/export')
+
+export async function apiDeleteMe(): Promise<void> {
+  await api('/me', { method: 'DELETE' })
+  saveAuth(null)
+}
+
 // ---------- Convites / Time (B2B2C) ----------
 export interface InvitePreview {
   valid: boolean
@@ -167,6 +198,7 @@ export interface RegisterInviteInput {
   email: string
   password: string
   name?: string
+  consent?: boolean
 }
 export async function apiRegisterInvite(input: RegisterInviteInput): Promise<AuthUserInfo> {
   const r = await api<{ user: AuthUserInfo; tokens: Tokens }>('/auth/register-invite', { method: 'POST', body: input, auth: false })
