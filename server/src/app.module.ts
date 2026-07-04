@@ -10,6 +10,8 @@ import { envValidationSchema } from './config/env.validation'
 import { EvaModule } from './eva/eva.module'
 import { HealthModule } from './health/health.module'
 import { InvitesModule } from './invites/invites.module'
+import { MailModule } from './mail/mail.module'
+import { MeModule } from './me/me.module'
 import { MinistryModule } from './ministry/ministry.module'
 import { PrismaModule } from './prisma/prisma.module'
 import { TenantModule } from './tenant/tenant.module'
@@ -30,9 +32,11 @@ import { StateModule } from './state/state.module'
     AuthModule,
     SessionsModule,
     StateModule,
+    MailModule,
     InvitesModule,
     TenantModule,
     MinistryModule,
+    MeModule,
     EvaModule,
     BillingModule,
     HealthModule,

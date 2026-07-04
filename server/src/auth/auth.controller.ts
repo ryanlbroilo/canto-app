@@ -1,7 +1,7 @@
 import { Body, Controller, Get, HttpCode, Post } from '@nestjs/common'
 import { Throttle } from '@nestjs/throttler'
 import { AuthService } from './auth.service'
-import { LoginDto, RefreshDto, RegisterDto, RegisterInviteDto } from './dto/auth.dto'
+import { LoginDto, RefreshDto, RegisterDto, RegisterInviteDto, RequestResetDto, ResetPasswordDto, VerifyEmailDto } from './dto/auth.dto'
 import { Public } from '../common/decorators/public.decorator'
 import { AuthUser, CurrentUser } from '../common/decorators/current-user.decorator'
 
@@ -51,5 +51,43 @@ export class AuthController {
   @Get('me')
   me(@CurrentUser() user: AuthUser) {
     return this.auth.me(user.userId)
+  }
+
+  // ---------- Verificação de e-mail ----------
+  @Public()
+  @Throttle(AUTH_THROTTLE)
+  @HttpCode(200)
+  @Post('verify-email')
+  async verifyEmail(@Body() dto: VerifyEmailDto) {
+    await this.auth.verifyEmail(dto.token)
+    return { ok: true }
+  }
+
+  // Autenticado, mas apertamos o rate-limit: reenvio de e-mail é caro/abusável.
+  @Throttle({ default: { limit: 3, ttl: 60_000 } })
+  @HttpCode(200)
+  @Post('resend-verification')
+  async resendVerification(@CurrentUser() user: AuthUser) {
+    await this.auth.resendVerification(user.userId, user.email)
+    return { ok: true }
+  }
+
+  // ---------- Reset de senha (sempre responde ok — não vaza existência) ----------
+  @Public()
+  @Throttle(AUTH_THROTTLE)
+  @HttpCode(200)
+  @Post('request-reset')
+  async requestReset(@Body() dto: RequestResetDto) {
+    await this.auth.requestReset(dto.tenantSlug, dto.email)
+    return { ok: true }
+  }
+
+  @Public()
+  @Throttle(AUTH_THROTTLE)
+  @HttpCode(200)
+  @Post('reset-password')
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    await this.auth.resetPassword(dto.token, dto.password)
+    return { ok: true }
   }
 }

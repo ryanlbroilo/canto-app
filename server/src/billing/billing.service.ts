@@ -107,6 +107,23 @@ export class BillingService {
     return portal.url
   }
 
+  /** Best-effort: encerra a assinatura Stripe do tenant. Usado na EXCLUSÃO de
+   *  conta (LGPD) — sem isto, apagar o dono deixaria o Stripe cobrando pra sempre
+   *  sem nenhum registro local pra reconciliar. Nunca lança (a exclusão não pode
+   *  depender do Stripe estar de pé). */
+  async cancelForTenant(tenantId: string): Promise<void> {
+    if (!this.stripe) return
+    try {
+      const sub = await this.prisma.subscription.findUnique({ where: { tenantId } })
+      if (sub?.stripeSubscriptionId && sub.status !== 'free' && sub.status !== 'canceled') {
+        await this.stripe.subscriptions.cancel(sub.stripeSubscriptionId)
+        this.logger.log(`assinatura do tenant ${tenantId} cancelada na exclusão de conta`)
+      }
+    } catch (e) {
+      this.logger.warn(`falha ao cancelar assinatura do tenant ${tenantId} na exclusão: ${e}`)
+    }
+  }
+
   /** Verifica a assinatura do webhook e devolve o evento. */
   constructEvent(raw: Buffer, signature: string): Stripe.Event {
     const secret = this.config.get<string>('STRIPE_WEBHOOK_SECRET')

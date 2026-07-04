@@ -29,4 +29,12 @@ export const envValidationSchema = Joi.object({
   STRIPE_PRICE_PROFESSOR_MONTHLY: Joi.string().allow('').optional(),
   STRIPE_PRICE_PROFESSOR_YEARLY: Joi.string().allow('').optional(),
   APP_URL: Joi.string().uri().default('http://localhost:5173'),
+  // E-mail (verificação/reset) — OPCIONAIS. Sem SMTP, os links são LOGADOS no
+  // console (dev). Em prod, o fundador liga SMTP_* e põe EMAIL_PROVIDER=smtp.
+  EMAIL_PROVIDER: Joi.string().valid('dev', 'smtp').default('dev'),
+  SMTP_HOST: Joi.string().allow('').optional(),
+  SMTP_PORT: Joi.number().optional(),
+  SMTP_USER: Joi.string().allow('').optional(),
+  SMTP_PASS: Joi.string().allow('').optional(),
+  SMTP_FROM: Joi.string().allow('').optional(),
 })
