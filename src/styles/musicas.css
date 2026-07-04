@@ -120,3 +120,38 @@
   font-size: 11px;
   color: var(--faint);
 }
+
+/* ---------- Piano-roll do score-following (S7) ---------- */
+.song-roll-wrap {
+  width: 100%;
+  max-width: 620px;
+}
+.song-roll {
+  width: 100%;
+  display: block;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid var(--hairline);
+}
+.song-readout {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 10px;
+}
+.song-readout-note {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--gold-2);
+  line-height: 1;
+}
+.song-readout-sung {
+  font-size: 13px;
+  color: var(--muted);
+}
+.song-readout-sung span {
+  color: var(--text);
+  font-family: var(--font-mono);
+}

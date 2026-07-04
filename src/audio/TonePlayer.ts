@@ -44,6 +44,12 @@ export class TonePlayer {
     if (ctx.state === 'suspended') await ctx.resume()
   }
 
+  /** Relógio de áudio (segundos). Mestre do score-following: mesmo clock do som,
+   * mais estável que performance.now e sincronizado com o que toca. 0 sem contexto. */
+  now(): number {
+    return this.ctx?.currentTime ?? 0
+  }
+
   /** Toca um acorde sustentado (uma ou mais notas MIDI). Substitui o acorde atual. */
   playChord(midis: number[], opts: PlayOpts = {}): void {
     const ctx = this.ensure()

@@ -1,20 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useApp } from '../app/AppContext'
-import {
-  getSong,
-  songDurationSec,
-  songLyrics,
-  songSessionId,
-  songTranspose,
-  timedNotes,
-} from '../data/songs'
-import { finalizeHarmony, scoreNote } from '../data/harmonyScore'
+import { getSong, songDurationSec, songLyrics, songSessionId, songTranspose, timedNotes, TimedNote } from '../data/songs'
+import { finalizeHarmony, NoteScore, scoreNote } from '../data/harmonyScore'
+import { drawSongRoll, NoteResult, rollPitchRange } from '../audio/songRoll'
 import { TonePlayer } from '../audio/TonePlayer'
 import { addSession, newId } from '../data/store'
 import { SessionAggregator } from '../audio/session'
 import { freqToMidiFloat, midiLabel } from '../audio/notes'
-import { centsZone } from '../theme'
 import { Icon } from '../components/ui/Icon'
 import { ShareButton } from '../components/ShareButton'
 import { FeatureReport } from '../data/types'
@@ -23,6 +16,8 @@ import '../styles/ministerio.css'
 
 const LEAD_IN = 2 // segundos de contagem antes da música começar
 const TAIL = 1 // segundos após a última nota antes de finalizar
+const ROLL_H = 200 // altura do piano-roll (px)
+const COVERAGE_FPS = 25 // frames/s esperados por nota cantada (cobertura/timing)
 
 interface SongResult {
   score: number
@@ -32,10 +27,11 @@ interface SongResult {
   report?: FeatureReport
 }
 
-// SONG PLAYER — canta uma música. Dois modos: APRENDER (o app toca a melodia de
-// referência, sem nota) e CANTAR (score-following leve: corre a melodia no relógio
-// e compara o pitch do cantor com a nota-alvo, pontuando por nota). Reusa a
-// PitchEngine, o TonePlayer e o scoring de encaixe da harmonia.
+// SONG PLAYER (S7 · score-following) — canta uma música seguindo a partitura que
+// rola. Dois modos: APRENDER (o app toca a melodia de guia) e CANTAR (o piano-roll
+// rola no RELÓGIO DE ÁUDIO, a curva do cantor aparece por cima e cada nota acende
+// verde/vermelho ao passar; pontua afinação + timing/cobertura). Reusa PitchEngine,
+// TonePlayer e o scoring de encaixe.
 export default function SongPlayer() {
   const { id } = useParams()
   const { engine, baseline, reload, micStatus, profile } = useApp()
@@ -45,6 +41,7 @@ export default function SongPlayer() {
   const shift = useMemo(() => (song ? songTranspose(song, baseline) : 0), [song, baseline])
   const notes = useMemo(() => (song ? timedNotes(song, shift) : []), [song, shift])
   const duration = song ? songDurationSec(song) : 0
+  const pitchRange = useMemo(() => rollPitchRange(notes), [notes])
 
   const [phase, setPhase] = useState<'ready' | 'run' | 'done'>('ready')
   const [mode, setMode] = useState<'learn' | 'sing'>('sing')
@@ -54,56 +51,75 @@ export default function SongPlayer() {
 
   const toneRef = useRef<TonePlayer | null>(null)
   const modeRef = useRef<'learn' | 'sing'>('sing')
-  const runStartRef = useRef(0)
+  const runStartRef = useRef(0) // âncora no relógio de ÁUDIO (TonePlayer.now)
   const activeIdxRef = useRef(-1)
   const lastGuidedRef = useRef(-1)
-  const startedRef = useRef(false) // a música (pós-contagem) já começou?
-  const lastCountRef = useRef(-1) // evita setState de contagem a cada frame
+  const startedRef = useRef(false)
+  const lastCountRef = useRef(-1)
   const samplesByNote = useRef<Map<number, number[]>>(new Map())
   const steadyByNote = useRef<Map<number, number[]>>(new Map())
+  const sungTraceRef = useRef<{ t: number; midi: number }[]>([])
+  const noteResultsRef = useRef<Map<number, NoteResult>>(new Map())
+  const finalizedRef = useRef<Set<number>>(new Set())
   const agg = useRef(new SessionAggregator())
 
-  const wrapRef = useRef<HTMLDivElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
   const sungRef = useRef<HTMLSpanElement>(null)
-  const centsRef = useRef<HTMLSpanElement>(null)
-  const needleRef = useRef<HTMLDivElement>(null)
   const barRef = useRef<HTMLDivElement>(null)
 
-  // pitch ao vivo (só chega frame no modo cantar, onde o mic está ligado)
+  // relógio de áudio: segundos de música (negativo na contagem)
+  const clock = (): number => (toneRef.current ? toneRef.current.now() - runStartRef.current - LEAD_IN : 0)
+
+  // pontua UMA nota: afinação (cents) × timing/cobertura (quanto da nota você cantou)
+  function scoreOneNote(nt: TimedNote): NoteScore {
+    const samples = samplesByNote.current.get(nt.index) ?? []
+    const steady = steadyByNote.current.get(nt.index) ?? []
+    const base = scoreNote(samples, steady)
+    const dur = Math.max(0.2, nt.endSec - nt.startSec)
+    const coverage = Math.min(1, samples.length / (dur * COVERAGE_FPS))
+    const noteScore = base.noteScore * (0.45 + 0.55 * coverage)
+    return { ...base, noteScore, hit: base.hit && coverage >= 0.45 }
+  }
+
+  // pitch ao vivo → curva do cantor + acumulação (só no modo cantar, mic ligado)
   useEffect(() => {
     if (phase !== 'run') return
     const unsub = engine.subscribe((f) => {
-      if (!startedRef.current) return // ignora frames da contagem (não poluem o report)
+      if (!startedRef.current) return
+      const el = clock()
       const idx = activeIdxRef.current
       agg.current.push(f, idx >= 0 ? notes[idx].midi : undefined)
-      const wrap = wrapRef.current
-      if (f.freq != null && f.note != null && idx >= 0) {
-        const cents = Math.round((freqToMidiFloat(f.freq) - notes[idx].midi) * 100)
-        if (!samplesByNote.current.has(idx)) samplesByNote.current.set(idx, [])
-        samplesByNote.current.get(idx)!.push(cents)
-        if (f.steadiness != null) {
-          if (!steadyByNote.current.has(idx)) steadyByNote.current.set(idx, [])
-          steadyByNote.current.get(idx)!.push(f.steadiness)
-        }
+      if (f.freq != null && f.note != null) {
+        const midi = freqToMidiFloat(f.freq)
+        // curva desenhada pelo roll
+        sungTraceRef.current.push({ t: el, midi })
+        while (sungTraceRef.current.length && sungTraceRef.current[0].t < el - 2.5) sungTraceRef.current.shift()
         if (sungRef.current) sungRef.current.textContent = `${f.note.name}${f.note.octave}`
-        if (centsRef.current) centsRef.current.textContent = `${cents > 0 ? '+' : ''}${cents}¢`
-        if (needleRef.current) needleRef.current.style.left = `${Math.max(-50, Math.min(50, cents)) + 50}%`
-        if (wrap) wrap.dataset.state = centsZone(cents)
-      } else {
-        if (sungRef.current) sungRef.current.textContent = '—'
-        if (wrap) wrap.dataset.state = 'silent'
+        // pontuação da nota-alvo ativa
+        if (idx >= 0) {
+          const cents = Math.round((midi - notes[idx].midi) * 100)
+          if (!samplesByNote.current.has(idx)) samplesByNote.current.set(idx, [])
+          samplesByNote.current.get(idx)!.push(cents)
+          if (f.steadiness != null) {
+            if (!steadyByNote.current.has(idx)) steadyByNote.current.set(idx, [])
+            steadyByNote.current.get(idx)!.push(f.steadiness)
+          }
+        }
+      } else if (sungRef.current) {
+        sungRef.current.textContent = '—'
       }
     })
     return unsub
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase])
 
-  // relógio: contagem → corre a melodia → finaliza
+  // relógio: contagem → corre a melodia (rola o roll) → finaliza
   useEffect(() => {
     if (phase !== 'run') return
+    const dpr = window.devicePixelRatio || 1
     let raf = 0
     const tick = () => {
-      const elapsed = (performance.now() - runStartRef.current) / 1000 - LEAD_IN
+      const elapsed = clock()
       if (elapsed < 0) {
         const c = Math.max(1, Math.ceil(-elapsed))
         if (lastCountRef.current !== c) {
@@ -111,7 +127,6 @@ export default function SongPlayer() {
           setCountIn(c)
         }
       } else {
-        // a música começou de fato: alinha o agregador AQUI (exclui a contagem)
         if (!startedRef.current) {
           startedRef.current = true
           if (lastCountRef.current !== 0) {
@@ -131,12 +146,45 @@ export default function SongPlayer() {
           activeIdxRef.current = idx
           setActiveIdx(idx)
         }
-        if (barRef.current) barRef.current.style.width = `${Math.max(0, Math.min(100, (elapsed / duration) * 100))}%`
+        // finaliza as notas que já passaram (pontua e colore no roll, em tempo real)
+        if (modeRef.current === 'sing') {
+          for (const nt of notes) {
+            if (nt.endSec <= elapsed && !finalizedRef.current.has(nt.index)) {
+              finalizedRef.current.add(nt.index)
+              const ns = scoreOneNote(nt)
+              noteResultsRef.current.set(nt.index, { hit: ns.hit, score: ns.noteScore })
+            }
+          }
+          // desenha o piano-roll
+          const cv = canvasRef.current
+          if (cv) {
+            const cssW = cv.clientWidth || 600
+            const need = Math.round(cssW * dpr)
+            if (cv.width !== need) {
+              cv.width = need
+              cv.height = Math.round(ROLL_H * dpr)
+            }
+            const c2d = cv.getContext('2d')
+            if (c2d)
+              drawSongRoll(c2d, {
+                width: cssW,
+                height: ROLL_H,
+                dpr,
+                notes,
+                elapsed,
+                sungTrace: sungTraceRef.current,
+                results: noteResultsRef.current,
+                pitchLo: pitchRange.lo,
+                pitchHi: pitchRange.hi,
+              })
+          }
+        }
         // guia toca cada nota uma vez (só no modo aprender)
         if (modeRef.current === 'learn' && idx >= 0 && lastGuidedRef.current !== idx) {
           lastGuidedRef.current = idx
           toneRef.current?.playNote(notes[idx].midi, { level: 0.16 })
         }
+        if (barRef.current) barRef.current.style.width = `${Math.max(0, Math.min(100, (elapsed / duration) * 100))}%`
         if (elapsed >= duration + TAIL) {
           finishAll()
           return
@@ -157,8 +205,8 @@ export default function SongPlayer() {
     [engine],
   )
 
-  // Aba pro fundo durante o run: o RAF pausa e o cronômetro congela, o que
-  // pontuaria notas puladas como erradas. Aborta pro ready (sem gravar sessão).
+  // Aba pro fundo durante o run: o RAF pausa e o áudio pode suspender. Aborta pro
+  // ready (sem gravar sessão) pra não pontuar notas puladas como erradas.
   useEffect(() => {
     if (phase !== 'run') return
     const onHide = () => {
@@ -183,6 +231,9 @@ export default function SongPlayer() {
     lastCountRef.current = -1
     samplesByNote.current = new Map()
     steadyByNote.current = new Map()
+    sungTraceRef.current = []
+    noteResultsRef.current = new Map()
+    finalizedRef.current = new Set()
     setActiveIdx(-1)
     setResult(null)
     setCountIn(LEAD_IN)
@@ -192,13 +243,13 @@ export default function SongPlayer() {
       await engine.start()
       if (engine.status !== 'running') return
     }
-    runStartRef.current = performance.now()
+    runStartRef.current = toneRef.current.now() // âncora no relógio de áudio
     setPhase('run')
   }
 
   function finishAll() {
     if (modeRef.current === 'sing' && song) {
-      const noteScores = notes.map((nt) => scoreNote(samplesByNote.current.get(nt.index) ?? [], steadyByNote.current.get(nt.index) ?? []))
+      const noteScores = notes.map((nt) => scoreOneNote(nt))
       const res = finalizeHarmony(noteScores)
       engine.stop()
       toneRef.current?.stop()
@@ -246,7 +297,7 @@ export default function SongPlayer() {
           <div className="card card--glow">
             <div className="player">
               <div className="eva-avatar" style={{ width: 64, height: 64 }}><Icon name="check" size={30} /></div>
-              <p className="hint center" style={{ maxWidth: '42ch' }}>Você ouviu a melodia inteira. Agora experimente cantar — eu comparo sua voz nota a nota.</p>
+              <p className="hint center" style={{ maxWidth: '42ch' }}>Você ouviu a melodia inteira. Agora experimente cantar — a partitura rola e eu comparo sua voz nota a nota.</p>
               <div className="controls" style={{ justifyContent: 'center' }}>
                 <button className="btn btn--primary" onClick={() => start('sing')}><Icon name="mic" /> Cantar agora</button>
                 <button className="btn" onClick={() => navigate('/musicas')}>Catálogo</button>
@@ -264,9 +315,9 @@ export default function SongPlayer() {
         <div className="card card--glow">
           <div className="player">
             <div className="score-big">{r?.score ?? 0}%</div>
-            <p className="hint center" style={{ maxWidth: '44ch' }}>{good ? 'Mandou bem — sua voz seguiu a melodia com firmeza. 👏' : 'Boa! Continue treinando os trechos mais difíceis — a afinação melhora rápido.'}</p>
+            <p className="hint center" style={{ maxWidth: '44ch' }}>{good ? 'Mandou bem — sua voz seguiu a melodia com firmeza. 👏' : 'Boa! Continue treinando os trechos mais difíceis — a afinação e o tempo melhoram rápido.'}</p>
             <div className="harm-metrics">
-              <div className="harm-metric"><b>{r?.hits ?? 0}/{r?.total ?? notes.length}</b><span>notas afinadas</span></div>
+              <div className="harm-metric"><b>{r?.hits ?? 0}/{r?.total ?? notes.length}</b><span>notas no ponto</span></div>
               <div className="harm-metric"><b>{Math.round(r?.avgDev ?? 0)}¢</b><span>desvio médio</span></div>
             </div>
             <div className="controls" style={{ justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -279,7 +330,7 @@ export default function SongPlayer() {
                   title: song.title,
                   name: profile.name || undefined,
                   stats: [
-                    { label: 'notas afinadas', value: `${r?.hits ?? 0}/${r?.total ?? notes.length}` },
+                    { label: 'notas no ponto', value: `${r?.hits ?? 0}/${r?.total ?? notes.length}` },
                     { label: 'desvio', value: `${Math.round(r?.avgDev ?? 0)}¢` },
                     { label: 'música', value: song.composer },
                   ],
@@ -301,7 +352,7 @@ export default function SongPlayer() {
       <div className="page">
         <div className="page-head">
           <div><h1 className="page-title">{song.title}</h1><p className="page-sub">{mode === 'learn' ? 'Aprendendo a melodia' : 'Cantando'} · {song.bpm} BPM</p></div>
-          <span className="badge badge--gold"><Icon name="music" size={13} /> {mode === 'learn' ? 'guia' : 'pontuado'}</span>
+          <span className="badge badge--gold"><Icon name="music" size={13} /> {mode === 'learn' ? 'guia' : 'score-following'}</span>
         </div>
 
         <div className="card card--glow">
@@ -310,21 +361,20 @@ export default function SongPlayer() {
               <div className="song-count">{countIn}</div>
             ) : (
               <>
-                <div className="display" ref={wrapRef} data-state="silent">
-                  <div className="display-sub">{active ? 'nota' : '♪'}</div>
-                  <div className="display-note" style={{ color: 'var(--gold-2)' }}>{active ? midiLabel(active.midi) : '—'}</div>
-                  {mode === 'sing' && (
-                    <>
-                      <div className="range-live-cap">você: <span ref={sungRef}>—</span> · <span className="mono" ref={centsRef}>—</span></div>
-                      <div className="cents-track">
-                        <span className="cents-tick cents-tick--left">-50</span>
-                        <span className="cents-center" />
-                        <span className="cents-tick cents-tick--right">+50</span>
-                        <div className="cents-needle" ref={needleRef} style={{ left: '50%' }} />
-                      </div>
-                    </>
-                  )}
-                </div>
+                {mode === 'sing' ? (
+                  <div className="song-roll-wrap">
+                    <canvas ref={canvasRef} className="song-roll" style={{ height: ROLL_H }} />
+                    <div className="song-readout">
+                      <span className="song-readout-note">{active ? midiLabel(active.midi) : '—'}</span>
+                      <span className="song-readout-sung">você: <span ref={sungRef}>—</span></span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="display" data-state="silent">
+                    <div className="display-sub">nota</div>
+                    <div className="display-note" style={{ color: 'var(--gold-2)' }}>{active ? midiLabel(active.midi) : '—'}</div>
+                  </div>
+                )}
 
                 <div className="song-lyrics">
                   {notes.map((nt) => (
