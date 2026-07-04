@@ -139,7 +139,7 @@ Fila do usuário (fazer uma a uma). Feitas: **S1, S2, S3, S4**.
 | S4 | ⛪ Ferramentas de ministério de louvor | ✅ feito — ver §5.1 |
 | S5 | 🔥 Comunidade | ✅ feito — ver §5.2 |
 | S6 | 🎼 Músicas autorais | ✅ feito — ver §5.3 |
-| **S7** | 🎵 **Cantar música real (score-following)** | ⬜ **PRÓXIMA** — feedback nota-a-nota — killer feature (S6 já entregou um sing-along pontuado; S7 aprofunda) |
+| S7 | 🎵 Cantar música real (score-following) | ✅ feito — ver §5.5 |
 | S8 | 🚀 Deploy de produção | ⬜ hospedagem, domínio, TLS, e-mail (verificação/reset), LGPD |
 | S9 | 🎓 Validação acadêmica | ⬜ parceria USP/CEV (Behlau) — validar o currículo |
 
@@ -265,6 +265,31 @@ Também: **fix** do bug visual da "Sua trilha" (a escada empilhava os 86 nós do
 nível inteiro — agora janela de nós). Tudo verificado por medição de layout
 (redimensionando o viewport pra furar o preview headless de aba oculta).
 
+### 5.5 — S7: Cantar música real / score-following (feito)
+
+A killer feature — aprofundou o `SongPlayer` do S6 num score-follower de verdade
+(estilo Yousician/Rocksmith). **Frontend-only.**
+
+- **Relógio de áudio** — o timing agora ancora em `TonePlayer.now()`
+  (`AudioContext.currentTime`), não `performance.now()`: mesmo clock do som, mais
+  estável e sincronizado com a guia/acompanhamento (mais preciso que RAF).
+- **Piano-roll rolando** (`src/audio/songRoll.ts`, canvas no `SongPlayer`) — a
+  melodia rola como blocos posicionados por TEMPO × PITCH, com um playhead fixo;
+  a **curva de pitch do cantor** aparece por cima ao vivo; cada nota **acende
+  verde/vermelho** ao passar pelo playhead (feedback em tempo real). Função de
+  desenho pura (testada com ctx-mock: sem erro, save/restore balanceado).
+- **Scoring com timing/cobertura** — além da afinação (cents), pontua *quanto* da
+  nota você cantou (`coverage`), então entrar no tempo certo e sustentar conta.
+  Notas finalizadas em tempo real (colorir o roll) + agregadas no fim.
+- Preserva as correções do review do S6 (contagem alinha o agregador, aborta em
+  background, sem guia-no-cantar, `durationSec` sem a contagem, `song:*` inerte).
+
+**Verificado**: typecheck; `drawSongRoll`/`rollPitchRange` (matemática + robustez
+via ctx-mock); relógio de áudio ancora o run (contagem via `tone.now()`); ready +
+learn-run sem erro. **Nota**: o preview headless (aba oculta) não roda RAF nem
+mic, então a partitura rolando + a curva ao vivo só aparecem no browser real.
+Review adversarial.
+
 ### Para ATIVAR os pagamentos (S2) — só o fundador pode
 1. No dashboard do Stripe, criar **6 preços** (Pro / Igreja / Professor × mensal/anual).
 2. Em `server/.env`:
@@ -362,11 +387,14 @@ a43d711 feat(saas): sync completo do estado do usuário
 
 ## 9. Próximo passo sugerido
 
-**S7 — Cantar música real (score-following) — killer feature.** O S6 já entregou
-a base (catálogo `songs.ts`, o `SongPlayer` com relógio + scoring por nota). O S7
-aprofunda: melodias mais longas/completas, detecção de onset (entrar na hora certa,
-não só afinação), viz de partitura rolando (piano-roll com playhead + curva do
-cantor), tolerância por tempo/legato, e talvez trilha de acompanhamento. Cuidado:
-RAF pausa em aba oculta — considerar `AudioContext.currentTime` como relógio
-mestre (mais estável que performance.now/RAF). Verificar via `preview_eval`
-(lembrar: RAF não roda no preview headless) e PowerShell p/ Docker.
+**S8 — Deploy de produção.** Hospedagem + domínio + TLS, e-mail (verificação/
+reset de senha), LGPD (política, consentimento, export/delete). O produto está
+denso (S1–S7 feitos) e device-local (privacidade é moat) — falta o wrapper de
+produção pra abrir ao público. Ativar as chaves reais (Stripe §"ATIVAR pagamentos"
+e EVA §"ATIVAR a EVA"). Alternativa: **S9** (validação acadêmica USP/CEV) se o foco
+for pesquisa antes do lançamento. Verificar via `preview_eval` (RAF não roda no
+preview headless) e PowerShell p/ Docker.
+
+Ideias de aprofundamento do score-following (pós-S7, quando voltar às músicas):
+melodias completas (várias frases), detecção de onset fina, trilha de
+acompanhamento tocando junto, e catálogo maior (CCLI quando ligar o licenciamento).
