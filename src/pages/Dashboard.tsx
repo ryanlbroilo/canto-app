@@ -9,6 +9,7 @@ import { SKILL_BY_ID } from '../data/skills'
 import { TRACKS, trackForLevel } from '../data/tracks'
 import { ACHIEVEMENTS } from '../data/achievements'
 import { getExercise } from '../data/exercises'
+import { getFreezeState } from '../data/store'
 import { useEntitlement } from '../hooks/useEntitlement'
 import type { ExerciseKind, TrackLevel } from '../data/types'
 
@@ -59,6 +60,7 @@ export default function Dashboard() {
   const { totalXp, level, xpIntoLevel, xpForNext, skills, achievements, recommendation, exercisesDone } =
     gamification
   const { allowed: canMinistry } = useEntitlement('team_admin')
+  const freeze = getFreezeState()
 
   const isNew = sessions.length === 0
   const week = last7(streak.days)
@@ -345,8 +347,15 @@ export default function Dashboard() {
           <div className="card reveal r2">
             <div className="dsh-sec-head">
               <span className="card-title">Sua semana</span>
-              <span className="badge badge--gold">
-                <Icon name="flame" size={13} /> recorde {streak.longest}d
+              <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+                {freeze.available > 0 && (
+                  <span className="badge" title="Protetor de ofensiva — cobre 1 dia perdido automaticamente" style={{ color: 'var(--info)' }}>
+                    <Icon name="shield" size={12} /> {freeze.available}
+                  </span>
+                )}
+                <span className="badge badge--gold">
+                  <Icon name="flame" size={13} /> recorde {streak.longest}d
+                </span>
               </span>
             </div>
             <div className="dsh-stat-row" style={{ marginTop: 14 }}>

@@ -29,6 +29,7 @@ type IconName =
   | 'bridge'
   | 'church'
   | 'note'
+  | 'shield'
 
 const PATHS: Record<IconName, JSX.Element> = {
   home: <path d="M3 10.5 12 3l9 7.5M5 9v11h5v-6h4v6h5V9" />,
@@ -128,6 +129,7 @@ const PATHS: Record<IconName, JSX.Element> = {
       <circle cx="7" cy="17" r="3" />
     </>
   ),
+  shield: <path d="M12 3l7 3v5c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z" />,
 }
 
 export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {

@@ -16,6 +16,7 @@ const K = {
   reviewsDone: 'canto.reviewsDone.v1',
   voicePart: 'canto.voicePart.v1',
   ministryPlan: 'canto.ministryPlan.v1',
+  freeze: 'canto.freeze.v1',
 }
 
 /** Conquista desbloqueada, com o momento em que caiu (para "novo!" na UI). */
@@ -159,7 +160,7 @@ export function mergeServerPlan(plan: MinistryPlan | null): void {
 
 /** Limpa os dados locais do usuário (usar no logout, para não vazar entre contas). */
 export function clearUserData(): void {
-  for (const k of [K.sessions, K.baseline, K.rangeHistory, K.achievements, K.seenOnboarding, K.profile, K.reviewsDone, K.voicePart, K.ministryPlan]) {
+  for (const k of [K.sessions, K.baseline, K.rangeHistory, K.achievements, K.seenOnboarding, K.profile, K.reviewsDone, K.voicePart, K.ministryPlan, K.freeze]) {
     try {
       localStorage.removeItem(k)
     } catch {
@@ -173,14 +174,21 @@ function dayKey(iso: string): string {
   return iso.slice(0, 10)
 }
 export function getStreak(): Streak {
-  return computeStreak(getSessions())
+  const fz = reconcileStreak()
+  return computeStreak(getSessions(), fz.usedDays)
 }
 
-/** Streak puro a partir de uma lista de sessões (reusado pro painel do líder). */
-export function computeStreak(sessions: { dateISO: string }[]): Streak {
-  const days = Array.from(new Set(sessions.map((s) => dayKey(s.dateISO)))).sort()
+/**
+ * Streak puro a partir de uma lista de sessões (reusado pro painel do líder).
+ * `frozenDays` = dias cobertos por um PROTETOR DE OFENSIVA (streak freeze): contam
+ * como mantidos na ofensiva atual/recorde, sem serem sessões reais.
+ */
+export function computeStreak(sessions: { dateISO: string }[], frozenDays: string[] = []): Streak {
+  const practiced = Array.from(new Set(sessions.map((s) => dayKey(s.dateISO))))
+  const days = Array.from(new Set([...practiced, ...frozenDays])).sort()
   const { current, longest } = computeRuns(days)
-  return { current, longest, total: sessions.length, days }
+  // `days` devolve só os dias PRATICADOS (o calendário mostra prática real).
+  return { current, longest, total: sessions.length, days: practiced.sort() }
 }
 function computeRuns(sortedDays: string[]): { current: number; longest: number } {
   if (sortedDays.length === 0) return { current: 0, longest: 0 }
@@ -216,6 +224,65 @@ function shiftDay(day: string, delta: number): string {
   const d = new Date(day + 'T00:00:00Z')
   d.setUTCDate(d.getUTCDate() + delta)
   return d.toISOString().slice(0, 10)
+}
+
+// ---------- Protetor de ofensiva (streak freeze) ----------
+// Pesquisa (Duolingo): a ANSIEDADE de perder a ofensiva é um dos maiores motores
+// de retenção; um "protetor" que cobre 1 dia perdido reduz o abandono. Ganha-se 1
+// a cada 7 dias de ofensiva (teto 2) e ele se auto-consome num único dia perdido.
+export interface FreezeState {
+  /** protetores disponíveis (0..2) */
+  available: number
+  /** dias que um protetor cobriu (contam na ofensiva) */
+  usedDays: string[]
+  /** maior marco de 7 dias já recompensado (evita re-conceder) */
+  grantedMilestone: number
+}
+const FREEZE_CAP = 2
+const DEFAULT_FREEZE: FreezeState = { available: 1, usedDays: [], grantedMilestone: 0 }
+export const getFreezeState = (): FreezeState => ({ ...DEFAULT_FREEZE, ...read<Partial<FreezeState>>(K.freeze, {}) })
+
+/**
+ * Concilia o protetor com as sessões (idempotente; grava só se mudar):
+ *  • auto-consome 1 protetor quando ONTEM foi perdido mas a ofensiva estava viva
+ *    (anteontem praticado/protegido) — cobre um único dia de buraco;
+ *  • concede +1 protetor a cada novo marco de 7 dias de ofensiva (teto 2).
+ * Chamado por getStreak (como reconcileAchievements por getGamification).
+ */
+export function reconcileStreak(): FreezeState {
+  const st = getFreezeState()
+  const sessions = getSessions()
+  const practiced = new Set(sessions.map((s) => dayKey(s.dateISO)))
+  const used = new Set(st.usedDays)
+  const today = new Date().toISOString().slice(0, 10)
+  const y1 = shiftDay(today, -1)
+  const y2 = shiftDay(today, -2)
+  let changed = false
+
+  // auto-consumo: buraco de UM dia (ontem) com ofensiva viva antes dele
+  if (
+    st.available > 0 &&
+    !practiced.has(today) &&
+    !practiced.has(y1) &&
+    !used.has(y1) &&
+    (practiced.has(y2) || used.has(y2))
+  ) {
+    st.usedDays = [...st.usedDays, y1]
+    st.available -= 1
+    used.add(y1)
+    changed = true
+  }
+
+  // concessão por marco de 7 dias (usa a ofensiva já com os protegidos)
+  const current = computeStreak(sessions, st.usedDays).current
+  while (current >= st.grantedMilestone + 7) {
+    st.grantedMilestone += 7
+    if (st.available < FREEZE_CAP) st.available += 1
+    changed = true
+  }
+
+  if (changed) write(K.freeze, st)
+  return st
 }
 
 // ---------- Conquistas desbloqueadas ----------
