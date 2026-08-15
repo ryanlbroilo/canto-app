@@ -175,9 +175,10 @@ export function clearUserData(): void {
 function dayKey(iso: string): string {
   return iso.slice(0, 10)
 }
+// Getter PURO: não reconcilia (não grava). A reconciliação do protetor de ofensiva
+// roda num ponto explícito no boot/reload (AppContext.loadAll → reconcileStreak()).
 export function getStreak(): Streak {
-  const fz = reconcileStreak()
-  return computeStreak(getSessions(), fz.usedDays)
+  return computeStreak(getSessions(), getFreezeState().usedDays)
 }
 
 /**
@@ -283,7 +284,10 @@ export function reconcileStreak(): FreezeState {
     changed = true
   }
 
-  if (changed) write(K.freeze, st)
+  if (changed) {
+    write(K.freeze, st)
+    syncStateNow()
+  }
   return st
 }
 
@@ -294,7 +298,10 @@ export interface WeeklyGoal {
 }
 const DEFAULT_GOAL: WeeklyGoal = { target: 5 }
 export const getWeeklyGoal = (): WeeklyGoal => ({ ...DEFAULT_GOAL, ...read<Partial<WeeklyGoal>>(K.weeklyGoal, {}) })
-export const setWeeklyGoal = (target: number): void => write(K.weeklyGoal, { target })
+export const setWeeklyGoal = (target: number): void => {
+  write(K.weeklyGoal, { target })
+  syncStateNow()
+}
 
 /** Dias distintos praticados na semana ISO atual (UTC, segunda→domingo). */
 export function weekPracticeDays(sessions: { dateISO: string }[], nowMs = Date.now()): number {
@@ -312,7 +319,10 @@ export interface ReminderPref {
 }
 const DEFAULT_REMINDER: ReminderPref = { enabled: false, hour: 19 }
 export const getReminder = (): ReminderPref => ({ ...DEFAULT_REMINDER, ...read<Partial<ReminderPref>>(K.reminder, {}) })
-export const setReminder = (r: ReminderPref): void => write(K.reminder, r)
+export const setReminder = (r: ReminderPref): void => {
+  write(K.reminder, r)
+  syncStateNow()
+}
 
 // ---------- Conquistas desbloqueadas ----------
 export const getUnlockedAchievements = (): UnlockedAchievement[] =>
@@ -342,6 +352,12 @@ export function reconcileAchievements(eligibleIds: string[]): UnlockedAchievemen
   return stored
 }
 
+/** Desbloqueia uma conquista imperativamente (evento, não derivada de sessão) —
+ *  ex.: a "primeira nota afinada" do onboarding. Persiste e sincroniza. */
+export function unlockAchievement(id: string): void {
+  reconcileAchievements([id])
+}
+
 // ---------- Gamificação (agregado, recomputável das sessões) ----------
 export function getGamification(): GamificationState {
   const state = computeGamification({
@@ -366,6 +382,9 @@ function syncStateNow(): void {
     baseline: getBaseline() as unknown as Record<string, unknown> | null,
     rangeHistory: getRangeHistory() as unknown[],
     achievements: getUnlockedAchievements() as unknown[],
+    freeze: getFreezeState() as unknown as Record<string, unknown>,
+    weeklyGoal: getWeeklyGoal() as unknown as Record<string, unknown>,
+    reminder: getReminder() as unknown as Record<string, unknown>,
     seenOnboarding: hasSeenOnboarding(),
   })
 }
@@ -377,6 +396,9 @@ export function hydrateUserState(s: UserStatePayload): void {
   if (s.baseline) write(K.baseline, s.baseline)
   if (s.rangeHistory) write(K.rangeHistory, s.rangeHistory)
   if (s.achievements) write(K.achievements, s.achievements)
+  if (s.freeze) write(K.freeze, s.freeze)
+  if (s.weeklyGoal) write(K.weeklyGoal, s.weeklyGoal)
+  if (s.reminder) write(K.reminder, s.reminder)
   if (s.seenOnboarding !== undefined) write(K.seenOnboarding, s.seenOnboarding)
 }
 

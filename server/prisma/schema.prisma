@@ -133,6 +133,9 @@ model UserState {
   baseline       Json? // VocalBaseline atual
   rangeHistory   Json? // VocalBaseline[]
   achievements   Json? // [{ id, at }]
+  freeze         Json? // { available, usedDays, grantedMilestone } — protetor de ofensiva
+  weeklyGoal     Json? // { target } — meta da semana
+  reminder       Json? // { enabled, hour } — lembrete diário
   seenOnboarding Boolean  @default(false)
   updatedAt      DateTime @updatedAt
   createdAt      DateTime @default(now())

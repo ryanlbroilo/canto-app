@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '../app/AppContext'
 import { Icon } from '../components/ui/Icon'
+import { Eva } from '../components/ui/Eva'
 import { Markdown } from '../components/ui/Markdown'
 import { Profile, VocalBaseline, SessionRecord, FeatureReport } from '../data/types'
 import { askEvaStream, buildStudentContext, intentMessage, EvaIntent, EvaMessage } from '../data/eva'
@@ -276,9 +277,7 @@ export default function Coach() {
     <div className="page">
       <div className="page-head">
         <div className="row gap-3">
-          <span className="eva-avatar" style={{ width: 44, height: 44, borderRadius: 14 }}>
-            <Icon name="spark" size={22} />
-          </span>
+          <Eva mood="happy" size={52} />
           <div>
             <h1 className="page-title" style={{ fontSize: 26 }}>
               EVA
@@ -329,19 +328,13 @@ export default function Coach() {
           <div className="chat-scroll" ref={scrollRef}>
             {msgs.map((m, i) => (
               <div key={i} className={`msg msg--${m.from} reveal`}>
-                {m.from === 'eva' && (
-                  <span className="eva-avatar msg-av">
-                    <Icon name="spark" size={15} />
-                  </span>
-                )}
+                {m.from === 'eva' && <Eva mood="happy" size={30} className="msg-av" />}
                 <div className="msg-bubble">{m.from === 'eva' ? <Markdown>{m.text}</Markdown> : m.text}</div>
               </div>
             ))}
             {loading && (
               <div className="msg msg--eva reveal">
-                <span className="eva-avatar msg-av">
-                  <Icon name="spark" size={15} />
-                </span>
+                <Eva mood="thinking" size={30} className="msg-av" />
                 <div className="msg-bubble typing">
                   <span />
                   <span />

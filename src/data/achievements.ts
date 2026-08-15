@@ -43,6 +43,16 @@ function rangeGainSemitones(hist: VocalBaseline[]): number {
 
 export const ACHIEVEMENTS: AchievementDef[] = [
   {
+    id: 'primeira-nota-afinada',
+    icon: 'target',
+    label: 'Primeira nota afinada',
+    desc: 'Você segurou uma nota afinada — a base de tudo.',
+    category: 'afinacao',
+    // Evento do onboarding (não derivada de sessão): desbloqueada imperativamente por
+    // unlockAchievement('primeira-nota-afinada') quando o motor trava a nota afinada.
+    unlockWhen: () => false,
+  },
+  {
     id: 'primeira-sessao',
     icon: 'star',
     label: 'Primeira nota',

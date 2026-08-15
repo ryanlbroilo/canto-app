@@ -48,11 +48,14 @@ export class AuthService {
 
   // ---------- Registro: novo tenant + usuário OWNER ----------
   async register(dto: RegisterDto): Promise<{ user: PublicUser; tokens: TokenBundle }> {
-    const slug = await this.uniqueSlug(dto.tenantName)
+    // Tenant pessoal sem fricção: se o cadastro não nomeia uma organização, derivamos
+    // um nome do próprio usuário (nome ou parte local do e-mail).
+    const tenantName = dto.tenantName?.trim() || dto.name?.trim() || dto.email.split('@')[0]
+    const slug = await this.uniqueSlug(tenantName)
     const passwordHash = await argon2.hash(dto.password)
 
     const user = await this.prisma.$transaction(async (tx) => {
-      const tenant = await tx.tenant.create({ data: { name: dto.tenantName, slug } })
+      const tenant = await tx.tenant.create({ data: { name: tenantName, slug } })
       return tx.user.create({
         data: {
           tenantId: tenant.id,
@@ -102,19 +105,41 @@ export class AuthService {
 
   // ---------- Login (escopado por tenant) ----------
   async login(dto: LoginDto): Promise<{ user: PublicUser; tokens: TokenBundle }> {
-    const tenant = await this.prisma.tenant.findUnique({ where: { slug: dto.tenantSlug.toLowerCase() } })
-    if (!tenant) throw new UnauthorizedException('Credenciais inválidas.')
+    const email = dto.email.toLowerCase()
 
-    const user = await this.prisma.user.findUnique({
-      where: { tenantId_email: { tenantId: tenant.id, email: dto.email.toLowerCase() } },
-    })
-    if (!user) throw new UnauthorizedException('Credenciais inválidas.')
+    // Candidatos: com slug, escopa ao tenant; sem slug (consumidor), busca o e-mail em
+    // TODOS os tenants (o e-mail é único POR tenant, não global).
+    let candidates: { user: User; slug: string }[] = []
+    if (dto.tenantSlug) {
+      const tenant = await this.prisma.tenant.findUnique({ where: { slug: dto.tenantSlug.toLowerCase() } })
+      if (tenant) {
+        const u = await this.prisma.user.findUnique({
+          where: { tenantId_email: { tenantId: tenant.id, email } },
+        })
+        if (u) candidates = [{ user: u, slug: tenant.slug }]
+      }
+    } else {
+      const users = await this.prisma.user.findMany({ where: { email }, include: { tenant: true } })
+      candidates = users.map((u) => ({ user: u, slug: u.tenant.slug }))
+    }
 
-    const ok = await argon2.verify(user.passwordHash, dto.password).catch(() => false)
-    if (!ok) throw new UnauthorizedException('Credenciais inválidas.')
+    // A SENHA decide: filtra os candidatos cujo hash confere (seguro mesmo com o
+    // mesmo e-mail em vários tenants — não vaza qual existe).
+    const matched: { user: User; slug: string }[] = []
+    for (const c of candidates) {
+      if (await argon2.verify(c.user.passwordHash, dto.password).catch(() => false)) matched.push(c)
+    }
 
+    if (matched.length === 0) throw new UnauthorizedException('Credenciais inválidas.')
+    if (matched.length > 1) {
+      throw new UnauthorizedException(
+        'Esse e-mail tem conta em mais de uma organização. Entre pelo link da sua organização.',
+      )
+    }
+
+    const { user, slug } = matched[0]
     const tokens = await this.issueTokens(user)
-    return { user: toPublicUser(user, tenant.slug), tokens }
+    return { user: toPublicUser(user, slug), tokens }
   }
 
   // ---------- Refresh com ROTAÇÃO (revoga o antigo, emite novo) ----------

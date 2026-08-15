@@ -141,15 +141,19 @@ const PATHS: Record<IconName, JSX.Element> = {
   download: <path d="M12 3v12M8 11l4 4 4-4M5 20h14" />,
 }
 
+// v2 chunky: ícones-forma fechada renderizam SÓLIDOS (fill); o resto é traço grosso.
+const SOLID = new Set<IconName>(['flame', 'star', 'play', 'crown', 'bolt', 'shield'])
+
 export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
+  const solid = SOLID.has(name)
   return (
     <svg
       width={size}
       height={size}
       viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.7}
+      fill={solid ? 'currentColor' : 'none'}
+      stroke={solid ? 'none' : 'currentColor'}
+      strokeWidth={solid ? 0 : 2.4}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"

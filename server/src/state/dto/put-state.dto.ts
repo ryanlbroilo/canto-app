@@ -29,6 +29,18 @@ export class PutStateDto {
   achievements?: unknown[]
 
   @IsOptional()
+  @IsObject()
+  freeze?: Record<string, unknown>
+
+  @IsOptional()
+  @IsObject()
+  weeklyGoal?: Record<string, unknown>
+
+  @IsOptional()
+  @IsObject()
+  reminder?: Record<string, unknown>
+
+  @IsOptional()
   @IsBoolean()
   seenOnboarding?: boolean
 }

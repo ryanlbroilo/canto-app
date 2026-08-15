@@ -1,0 +1,53 @@
+/* Onboarding — passo da "primeira nota afinada" (A3). Tokens theme-aware. */
+
+.onb-note-cue {
+  width: 136px;
+  height: 136px;
+  margin: 6px auto;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-size: 2.1rem;
+  color: var(--muted);
+  border: 2px solid var(--hairline-strong);
+  background: var(--panel);
+  transition:
+    color 0.25s var(--ease),
+    border-color 0.25s var(--ease),
+    background 0.25s var(--ease),
+    box-shadow 0.25s var(--ease);
+}
+/* Afinado: a "trava do afinador" do motor acende o círculo em teal. */
+.onb-note-cue[data-intune='1'] {
+  color: var(--good);
+  border-color: var(--good);
+  background: color-mix(in srgb, var(--good) 12%, var(--panel));
+  box-shadow:
+    0 0 0 6px color-mix(in srgb, var(--good) 16%, transparent),
+    0 0 36px color-mix(in srgb, var(--good) 40%, transparent);
+}
+
+.onb-achv {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: center;
+  padding: 8px 14px;
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--gold) 14%, var(--panel));
+  color: var(--gold-deep);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* Badge da vitória: reaproveita o avatar da EVA com um glow dourado de conquista. */
+.onb-win-badge {
+  box-shadow: var(--shadow-gold);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onb-note-cue {
+    transition: none;
+  }
+}

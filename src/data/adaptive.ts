@@ -38,12 +38,20 @@ function withUnit(id: string, reason: string): string {
   return u ? `${reason} (unidade “${u.title}”)` : reason
 }
 
-/** Nível de trilha sugerido a partir do progresso (heurística simples). */
-function levelFromContext(args: RecommendArgs): TrackLevel {
-  const done = args.completedIds.size
+/**
+ * Nível de trilha sugerido a partir de quantos exercícios foram DOMINADOS
+ * (heurística simples). Exportado porque o karaokê precisa saber em que nível o
+ * acerto recente foi conseguido: 90% num exercício de iniciante e 90% num de
+ * avançado não dizem a mesma coisa sobre capacidade.
+ */
+export function trackLevelForCompleted(done: number): TrackLevel {
   if (done >= 12) return 'avancado'
   if (done >= 5) return 'intermediario'
   return 'iniciante'
+}
+
+function levelFromContext(args: RecommendArgs): TrackLevel {
+  return trackLevelForCompleted(args.completedIds.size)
 }
 
 function rec(exerciseId: string, reason: string, tag: string): AdaptiveRecommendation | null {

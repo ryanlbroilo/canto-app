@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import '../styles/landing.css'
 import { Icon } from '../components/ui/Icon'
+import { RingO } from '../components/ui/RingO'
 
 // Landing pública (aquisição). Anônimo que abre o app cai aqui; CTAs levam ao
 // cadastro/login. Reusa o design system (dourado/escuro, Fraunces). O visual do
@@ -15,10 +16,10 @@ export default function Landing() {
       <header className="lp-nav">
         <div className="lp-brand">
           <span className="auth-logo">
-            <Icon name="spark" size={18} />
+            <img src="/brand/eva.png" alt="EVA" />
           </span>
           <span className="auth-word">
-            Cant<em>o</em>
+            Cant<RingO />
           </span>
         </div>
         <Link to="/auth" className="lp-nav-login">
@@ -115,7 +116,7 @@ export default function Landing() {
 
       {/* ---------- rodapé ---------- */}
       <footer className="lp-foot">
-        <span className="auth-word">Cant<em>o</em></span>
+        <span className="auth-word">Cant<RingO /></span>
         <div className="lp-foot-links">
           <Link to="/privacidade">Privacidade</Link>
           <Link to="/auth">Entrar</Link>

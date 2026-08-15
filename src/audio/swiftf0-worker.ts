@@ -3,12 +3,22 @@
 // confidence. Roda em paralelo (e mais devagar) que o MPM; a main thread usa a
 // estimativa neural como VETO DE OITAVA e sinal de confiança.
 //
-// I/O do modelo (verificado nas fontes primárias):
-//   entrada: 'input_audio' float32 [1, N] — waveform CRU mono @16kHz (STFT interna)
-//   saídas:  'pitch_hz' [1, n_frames] (Hz) e 'confidence' [1, n_frames] (0..1)
+// A matemática (pré-processamento, gate de validade, constantes do modelo) mora em
+// swiftf0-core.ts, compartilhada com a CLI de importação do karaokê — os dois lados
+// da comparação PRECISAM decidir "frame utilizável" da mesma forma. Aqui fica só a
+// cola de browser: SAB, resample e transporte.
 import * as ort from 'onnxruntime-web/wasm'
 import { RING, ringViews } from './ringbuffer'
 import { Resampler16k } from './resample'
+import {
+  SWIFTF0_CONF_LIVE,
+  SWIFTF0_INPUT,
+  SWIFTF0_OUT_CONF,
+  SWIFTF0_OUT_PITCH,
+  decodeFrames,
+  latestVoiced,
+  peakNorm,
+} from './swiftf0-core'
 
 ort.env.wasm.wasmPaths = '/ort/' // binários same-origin (compat COEP credentialless)
 ort.env.wasm.numThreads = 1 // modelo minúsculo; single-thread simplifica e basta
@@ -16,9 +26,6 @@ ort.env.wasm.numThreads = 1 // modelo minúsculo; single-thread simplifica e bas
 const post = (m: unknown, transfer: Transferable[] = []) =>
   (self as unknown as { postMessage: (m: unknown, t: Transferable[]) => void }).postMessage(m, transfer)
 
-const FMIN = 46.875
-const FMAX = 2093.75
-const CONF_THRESH = 0.9
 const CHUNK = 6144 // amostras @srcRate lidas por inferência (~128ms @48k → ~8 frames @16k)
 const NEURAL_HOP = 1536 // reprocessa quando avançou ~32ms @48k
 
@@ -55,41 +62,18 @@ self.onmessage = async (e: MessageEvent) => {
   }
 }
 
-function peakNorm(x: Float32Array): Float32Array {
-  let max = 0
-  for (let i = 0; i < x.length; i++) {
-    const a = Math.abs(x[i])
-    if (a > max) max = a
-  }
-  if (max <= 0) return x
-  const y = new Float32Array(x.length)
-  for (let i = 0; i < x.length; i++) y[i] = x[i] / max
-  return y
-}
-
 async function infer(audio16k: Float32Array): Promise<{ f0: number; conf: number }> {
   if (!session) return { f0: 0, conf: 0 }
   const norm = peakNorm(audio16k)
   const input = new ort.Tensor('float32', norm, [1, norm.length])
-  const out = await session.run({ input_audio: input })
-  const pitch = out.pitch_hz.data as Float32Array
-  const conf = out.confidence.data as Float32Array
-  // frame voiced mais recente (mais próximo do "agora")
-  for (let i = pitch.length - 1; i >= 0; i--) {
-    if (conf[i] > CONF_THRESH && pitch[i] >= FMIN && pitch[i] <= FMAX) {
-      return { f0: pitch[i], conf: conf[i] }
-    }
-  }
-  // sem voiced: retorna o de maior confiança (para diagnóstico)
-  let bi = 0
-  let bc = 0
-  for (let i = 0; i < conf.length; i++) {
-    if (conf[i] > bc) {
-      bc = conf[i]
-      bi = i
-    }
-  }
-  return { f0: pitch[bi] || 0, conf: bc }
+  const out = await session.run({ [SWIFTF0_INPUT]: input })
+  const frames = decodeFrames(
+    out[SWIFTF0_OUT_PITCH].data as Float32Array,
+    out[SWIFTF0_OUT_CONF].data as Float32Array,
+    SWIFTF0_CONF_LIVE,
+  )
+  const best = latestVoiced(frames)
+  return { f0: best.f0, conf: best.conf }
 }
 
 // Verificação em runtime: senoide sintética 220Hz @16k.

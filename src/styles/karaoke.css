@@ -1,0 +1,455 @@
+/* Karaokê — preparo (ritual de 4 passos) e execução (palco).
+   Usa só os tokens de tokens.css: o karaokê é uma tela nova dentro do mesmo mundo
+   visual, não um mundo próprio. */
+
+/* ---------------------------------------------------------------- preparo -- */
+
+/* O ritual é uma LISTA com espinha, não um grid de cards. A ordem importa de
+   verdade — calibrar depois de pôr o fone é impossível, e escolher o arquivo antes
+   da faixa não faz sentido — então a tela mostra sequência, e não opções. */
+.kk-ritual {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  position: relative;
+}
+
+/* espinha: trilho apagado + trilho aceso que cresce conforme os passos fecham.
+   É esta a barra de progresso da tela; não existe outra. */
+.kk-ritual::before,
+.kk-ritual::after {
+  content: '';
+  position: absolute;
+  left: 15px;
+  top: 14px;
+  width: 2px;
+  border-radius: 1px;
+}
+.kk-ritual::before {
+  bottom: 14px;
+  background: var(--hairline-strong);
+}
+/* cresce por scaleY, não por height: o trilho é fino, mas animar layout num
+   elemento que atravessa a página inteira sujaria o quadro sem precisar */
+.kk-ritual::after {
+  height: calc(100% - 28px);
+  background: var(--good);
+  transform: scaleY(var(--kk-progress, 0));
+  transform-origin: top center;
+  transition: transform 0.6s var(--ease);
+}
+
+.kk-step {
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  gap: 16px;
+  padding-bottom: 26px;
+  position: relative;
+}
+.kk-step:last-child {
+  padding-bottom: 0;
+}
+
+.kk-step-mark {
+  position: relative;
+  z-index: 1;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font: 600 13px/1 var(--font-ui);
+  background: var(--panel);
+  border: 2px solid var(--hairline-strong);
+  color: var(--faint);
+  transition:
+    border-color 0.3s var(--ease),
+    color 0.3s var(--ease);
+}
+.kk-step[data-state='now'] .kk-step-mark {
+  border-color: var(--gold);
+  color: var(--gold-2);
+}
+.kk-step[data-state='done'] .kk-step-mark {
+  background: var(--good);
+  border-color: var(--good);
+  color: #fff;
+}
+
+.kk-step-title {
+  font: 600 16px/1.3 var(--font-display);
+  margin: 5px 0 0;
+  color: var(--text);
+}
+.kk-step[data-state='todo'] .kk-step-title {
+  color: var(--muted);
+}
+.kk-step-why {
+  margin: 6px 0 0;
+  max-width: 62ch;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+.kk-step-do {
+  margin-top: 14px;
+}
+/* o passo que acabou de virar o da vez entra uma vez, do já-visível pra posição */
+.kk-step[data-state='now'] .kk-step-do {
+  animation: kk-reveal 0.45s var(--ease) both;
+}
+@keyframes kk-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kk-ritual::after {
+    transition: none;
+  }
+  .kk-step[data-state='now'] .kk-step-do {
+    animation: none;
+  }
+}
+
+/* lista de faixas importadas */
+.kk-tracks {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.kk-track {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 11px 14px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--hairline);
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    border-color 0.18s var(--ease),
+    background 0.18s var(--ease);
+}
+.kk-track:hover {
+  border-color: var(--gold);
+  background: var(--fill-subtle);
+}
+.kk-track:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+.kk-track[aria-pressed='true'] {
+  border-color: var(--good);
+  background: var(--fill-subtle);
+}
+.kk-track-title {
+  font-weight: 600;
+}
+.kk-track-meta {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--faint);
+  white-space: nowrap;
+}
+
+/* estado vazio: a tela não tem o que oferecer sem uma importação, então oferece o
+   comando exato em vez de um desenho bonito de caixa vazia */
+.kk-empty {
+  border: 1px dashed var(--hairline-strong);
+  border-radius: var(--r-md);
+  padding: 18px;
+  background: var(--fill-subtle);
+}
+.kk-cmd {
+  display: block;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  background: var(--bg-0);
+  border: 1px solid var(--hairline);
+  font: 12px/1.6 var(--font-mono);
+  color: var(--text);
+  overflow-x: auto;
+  white-space: pre;
+}
+
+/* linha de resultado de um passo (arquivo conferido, latência medida) */
+.kk-fact {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.kk-fact[data-tone='ok'] {
+  color: var(--good);
+}
+.kk-fact[data-tone='bad'] {
+  color: var(--off);
+}
+.kk-fact b {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.kk-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.kk-file input[type='file'] {
+  display: none;
+}
+
+.kk-go {
+  margin-top: 22px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.kk-go .hint {
+  margin: 0;
+}
+
+/* ------------------------------------------------------------------ palco -- */
+
+/* Durante o canto o app mostra POUCO de propósito: julgar em tempo real piora a
+   performance de quem canta. O rolo mostra ONDE você está — que é orientação —
+   e nenhum número de erro, que seria cobrança. O diagnóstico é depois. */
+.kk-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  align-items: center;
+}
+
+.kk-target {
+  font: 700 clamp(38px, 9vw, 64px) / 1 var(--font-display);
+  color: var(--gold-2);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  min-height: 1em;
+}
+.kk-target[data-idle='true'] {
+  color: var(--faint);
+}
+.kk-target-sub {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: var(--faint);
+}
+
+.kk-roll-wrap {
+  width: 100%;
+  position: relative;
+}
+.kk-roll {
+  width: 100%;
+  display: block;
+  border-radius: var(--r-md);
+  background: var(--bg-0);
+  border: 1px solid var(--hairline);
+}
+
+.kk-time {
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font: 12px/1 var(--font-ui);
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+.kk-time-track {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--hairline-strong);
+  overflow: hidden;
+}
+.kk-time-fill {
+  height: 100%;
+  background: var(--gold);
+  border-radius: 2px;
+}
+
+/* --------------------------------------------------------------- medições -- */
+
+/* O que aparece no fim, por enquanto, são MEDIÇÕES — o que deu para medir e o que
+   não deu. Nada aqui é diagnóstico; atribuir causa é a próxima etapa. */
+.kk-measures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 32px;
+  margin: 4px 0 0;
+  padding: 0;
+}
+.kk-measure {
+  margin: 0;
+}
+.kk-measure dt {
+  font-size: 12px;
+  color: var(--faint);
+}
+.kk-measure dd {
+  margin: 2px 0 0;
+  font: 600 22px/1.2 var(--font-display);
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.kk-note {
+  margin: 16px 0 0;
+  max-width: 60ch;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.kk-sub {
+  margin: 26px 0 10px;
+  font: 600 15px/1.3 var(--font-display);
+  color: var(--text);
+}
+
+/* Achados são uma LISTA separada por fio, não cards: são três itens que se leem em
+   sequência, do mais grave para o menos, e caixas iguais apagariam justamente essa
+   ordem. */
+.kk-findings {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-width: 64ch;
+}
+.kk-finding {
+  padding: 12px 0;
+  border-top: 1px solid var(--hairline);
+}
+.kk-finding:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+.kk-finding-head {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text);
+}
+.kk-finding-head b {
+  font-family: var(--font-display);
+}
+.kk-finding-ev {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+.kk-finding-n {
+  margin: 5px 0 0;
+  font-size: 12px;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --------------------------------------------------------------- veredito -- */
+
+/* Quando a música não cabe na voz, isto abre o resultado. Não é um alerta de erro —
+   é a resposta, e a única acionável naquele estado. Por isso não ganha caixa, tarja
+   nem fundo: ele já está em primeiro lugar na página, e o peso vem do tamanho da
+   frase. O fio embaixo é o mesmo que separa os achados — o bloco pertence ao
+   documento, não flutua sobre ele. */
+.kk-verdict {
+  margin: 0 0 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--hairline);
+}
+.kk-verdict-head {
+  margin: 0;
+  max-width: 24ch;
+  font: 600 clamp(20px, 3.4vw, 26px) / 1.2 var(--font-display);
+  letter-spacing: -0.01em;
+  color: var(--gold-2);
+}
+/* "no-limite" é ressalva, não veredito: mesma estrutura, um grau abaixo no tom e
+   no tamanho, para não competir com o resultado que vem em seguida. */
+.kk-verdict[data-tone='limite'] .kk-verdict-head {
+  font-size: 17px;
+  color: var(--text);
+}
+.kk-verdict-body {
+  margin: 10px 0 0;
+  max-width: 62ch;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.kk-verdict-body b {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* De quem é a conta do achado. Fica entre a evidência e a contagem porque é leitura
+   de conclusão, não de dado — e some quando não há conclusão. */
+.kk-finding-culpa {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.kk-finding-culpa[data-tone='musica'] {
+  color: var(--gold-2);
+}
+.kk-finding-culpa[data-tone='voce'] {
+  color: var(--text);
+}
+.kk-finding-culpa[data-tone='mudo'] {
+  color: var(--faint);
+}
+
+/* Uma tarefa, nunca uma lista: sair de uma música com cinco deveres é sair sem
+   nenhum. */
+.kk-next {
+  margin: 26px 0 0;
+  padding: 16px 18px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--hairline);
+  background: var(--fill-subtle);
+  max-width: 64ch;
+}
+.kk-next-label {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.kk-next-title {
+  margin: 5px 0 0;
+  font: 600 17px/1.3 var(--font-display);
+  color: var(--text);
+}
+.kk-next-why {
+  margin: 7px 0 14px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+/* Sinais não acusam competência nenhuma — descrevem o que aconteceu. Por isso vêm
+   depois dos achados e num tom mais baixo. */
+.kk-signals {
+  margin: 16px 0 0;
+  padding-left: 18px;
+  max-width: 60ch;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted);
+}

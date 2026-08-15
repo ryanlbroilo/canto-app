@@ -5,8 +5,7 @@ import { useAuth } from '../app/AuthContext'
 import { useApp } from '../app/AppContext'
 import { ApiError, apiPreviewInvite, InvitePreview } from '../data/api'
 import { Icon } from '../components/ui/Icon'
-
-const LAST_TENANT = 'canto.lastTenant.v1'
+import { RingO } from '../components/ui/RingO'
 
 export default function Auth() {
   const { login, register, registerWithInvite } = useAuth()
@@ -20,8 +19,6 @@ export default function Auth() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const [tenantSlug, setTenantSlug] = useState(() => localStorage.getItem(LAST_TENANT) || '')
-  const [tenantName, setTenantName] = useState('')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -62,10 +59,11 @@ export default function Auth() {
       if (joining) {
         await registerWithInvite({ token: inviteToken, email: email.trim(), password, name: name.trim() || undefined, consent })
       } else if (mode === 'login') {
-        await login({ tenantSlug: tenantSlug.trim().toLowerCase(), email: email.trim(), password })
-        localStorage.setItem(LAST_TENANT, tenantSlug.trim().toLowerCase())
+        // Login sem fricção: só e-mail + senha (o servidor resolve o tenant).
+        await login({ email: email.trim(), password })
       } else {
-        await register({ tenantName: tenantName.trim(), email: email.trim(), password, name: name.trim() || undefined, consent })
+        // Cadastro sem fricção: tenant pessoal auto-provisionado no servidor.
+        await register({ email: email.trim(), password, name: name.trim() || undefined, consent })
       }
       reload()
       navigate('/', { replace: true })
@@ -84,10 +82,10 @@ export default function Auth() {
       <form className="auth-card card" onSubmit={submit}>
         <div className="auth-brand">
           <span className="auth-logo">
-            <Icon name="spark" size={20} />
+            <img src="/brand/eva.png" alt="EVA" />
           </span>
           <span className="auth-word">
-            Cant<em>o</em>
+            Cant<RingO />
           </span>
         </div>
 
@@ -111,23 +109,11 @@ export default function Auth() {
             <p className="auth-sub">
               {mode === 'login'
                 ? 'Entre para treinar e sincronizar seu progresso.'
-                : 'Crie sua organização e comece a treinar. Sua voz fica no dispositivo — só as métricas viajam.'}
+                : 'Comece a treinar em segundos. Sua voz fica no dispositivo — só as métricas viajam.'}
             </p>
           </>
         )}
 
-        {!joining && mode === 'register' && (
-          <label className="auth-field">
-            <span>Organização</span>
-            <input className="auth-input" value={tenantName} onChange={(e) => setTenantName(e.target.value)} placeholder="Meu estúdio" required minLength={2} autoComplete="organization" />
-          </label>
-        )}
-        {!joining && mode === 'login' && (
-          <label className="auth-field">
-            <span>Organização (identificador)</span>
-            <input className="auth-input" value={tenantSlug} onChange={(e) => setTenantSlug(e.target.value)} placeholder="meu-estudio" required autoCapitalize="none" spellCheck={false} />
-          </label>
-        )}
         {(joining || mode === 'register') && (
           <label className="auth-field">
             <span>Seu nome</span>

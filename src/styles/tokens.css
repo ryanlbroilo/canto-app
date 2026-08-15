@@ -1,54 +1,26 @@
 /* ============================================================
-   Design tokens — "Estúdio noturno / voz viva"
-   Dark quente (espresso), marca âmbar/mel, semântica de afinação
-   separada (menta / âmbar / coral). Tipografia: Fraunces + Bricolage
-   Grotesque + JetBrains Mono.
+   Design tokens v2 — "Duolingo de verdade, cor do Canto".
+   Fundo NEUTRO alternável (branco/cinza escuro quente) + âmbar de acento.
+   Ação primária = TEAL-afinado ("em tom = pode seguir"). Rounded-bold:
+   Baloo 2 (display) + Nunito (UI). Botões 3D chunky usam os *-edge.
+   Os mesmos nomes de token servem os dois temas — só os valores mudam.
    ============================================================ */
+
 :root {
-  /* — canvas (near-black quente) — */
-  --bg-0: #0d0c0a;
-  --bg-1: #131009;
-  --panel: #1b1710;
-  --panel-2: #171309;
-  --elev: #241d13;
-  --hairline: rgba(233, 180, 76, 0.1);
-  --hairline-strong: rgba(233, 180, 76, 0.2);
-  --overlay: rgba(9, 8, 6, 0.72);
+  color-scheme: light;
 
-  /* — tinta — */
-  --text: #f5eddd;
-  --muted: #ab9d86;
-  --faint: #726750;
-
-  /* — marca (mel/âmbar + terracota) — */
-  --gold: #e9b44c;
-  --gold-2: #f3cd73;
-  --gold-deep: #b9832c;
-  --ember: #c65d3b;
-
-  /* — semântica de afinação — */
-  --good: #57d6a6; /* no tom */
-  --close: #f0b94a; /* perto */
-  --off: #f26d5b; /* fora */
-  --info: #7fb2ff;
-
-  /* — tipografia — */
-  --font-display: 'Fraunces', 'Iowan Old Style', Georgia, serif;
-  --font-ui: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+  /* — tipografia rounded-bold (fontes livres) — */
+  --font-display: 'Baloo 2', 'Nunito', ui-rounded, system-ui, sans-serif;
+  --font-ui: 'Nunito', ui-rounded, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
 
-  /* — raios — */
-  --r-xs: 8px;
-  --r-sm: 11px;
-  --r-md: 15px;
-  --r-lg: 20px;
-  --r-xl: 28px;
+  /* — raios (mais lúdicos) — */
+  --r-xs: 10px;
+  --r-sm: 13px;
+  --r-md: 16px;
+  --r-lg: 22px;
+  --r-xl: 30px;
   --r-pill: 999px;
-
-  /* — sombras — */
-  --shadow-1: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 12px 34px rgba(0, 0, 0, 0.42);
-  --shadow-2: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 24px 60px rgba(0, 0, 0, 0.5);
-  --shadow-gold: 0 10px 34px rgba(233, 180, 76, 0.28);
 
   /* — espaço — */
   --sidebar-w: 246px;
@@ -58,4 +30,150 @@
   /* — motion — */
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
   --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ===== TEMA CLARO — papel BRANCO puro, superfícies cinza NEUTRO ===== */
+  --bg-0: #ffffff;
+  --bg-1: #f7f7f7;
+  --panel: #f1f1f1;
+  --panel-2: #ececec;
+  --elev: #ffffff;
+  --hairline: rgba(0, 0, 0, 0.08);
+  --hairline-strong: rgba(0, 0, 0, 0.14);
+  --overlay: rgba(0, 0, 0, 0.5);
+  --fill-subtle: rgba(0, 0, 0, 0.04); /* preenchimento passivo (slot vazio) — vira dark no tema escuro */
+
+  --text: #2e2a26;
+  --muted: #6e6660;
+  --faint: #a8a29c;
+
+  /* marca / acentos (paleta quente) */
+  --gold: #f2a83b; /* âmbar — XP / acento onipresente (texto ESCURO sobre ele) */
+  --gold-2: #f7c948; /* dourado claro (topo de gradiente) */
+  --gold-deep: #9a6412; /* âmbar legível como texto sobre claro */
+  --amber-edge: #cf8622; /* lábio 3D do botão âmbar */
+  --ember: #e4572e; /* brasa — ofensiva/energia */
+  --ember-edge: #bc4523;
+  --plum: #7a3e93; /* ameixa — EVA / premium */
+
+  /* semântica de afinação (good = teal = AÇÃO PRIMÁRIA + "afinado/correto") */
+  --good: #1f8a76;
+  --teal-edge: #15705e; /* lábio 3D do botão primário */
+  --close: #d98a2a; /* perto */
+  --off: #c4462c; /* fora / erro (sempre com X + shake) */
+  --info: #2b6cb0;
+  --blue: var(--info); /* alias: azul de cool-down / info (segue o tema via --info) */
+
+  /* Tinta escura FIXA p/ texto sobre acento CLARO (gold/âmbar/teal). NÃO inverte no
+     dark — o acento é claro nos dois temas, então a tinta tem de ficar escura sempre. */
+  --ink-on-accent: #1c1508;
+
+  /* sombras NEUTRAS (cinza puro — sem tint quente sob os cards) */
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.05), 0 8px 22px rgba(0, 0, 0, 0.07);
+  --shadow-2: 0 2px 4px rgba(0, 0, 0, 0.06), 0 20px 50px rgba(0, 0, 0, 0.1);
+  --shadow-gold: 0 8px 26px rgba(242, 168, 59, 0.28);
+
+  /* atmosfera quase-invisível e NEUTRA → o canvas fica branco limpo */
+  --aurora-1: rgba(0, 0, 0, 0.012);
+  --aurora-2: rgba(0, 0, 0, 0.01);
+  --aurora-3: rgba(0, 0, 0, 0.008);
+  --grain-opacity: 0;
+  --selection-bg: rgba(31, 138, 118, 0.22);
+  --selection-fg: #14332c;
+  --scrollbar: rgba(0, 0, 0, 0.15);
+  --scrollbar-hover: rgba(0, 0, 0, 0.28);
+}
+
+/* ===== TEMA ESCURO — carvão quente (segue o SO, salvo override) ===== */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+
+    --bg-0: #050505;
+    --bg-1: #0e0e0e;
+    --panel: #161616;
+    --panel-2: #1e1e1e;
+    --elev: #242424;
+    --hairline: rgba(255, 255, 255, 0.08);
+    --hairline-strong: rgba(255, 255, 255, 0.14);
+    --overlay: rgba(0, 0, 0, 0.6);
+    --fill-subtle: rgba(255, 255, 255, 0.04);
+
+    --text: #f5f2ee;
+    --muted: #b5ac9f;
+    --faint: #7c7367;
+
+    --gold: #f6b84f;
+    --gold-2: #f8c766;
+    --gold-deep: #f6b84f;
+    --amber-edge: #c98a2a;
+    --ember: #f26a44;
+    --ember-edge: #c0492e;
+    --plum: #b77bc9;
+
+    --good: #3dae97;
+    --teal-edge: #227a67;
+    --close: #f0b94a;
+    --off: #e06a50;
+    --info: #7fb2ff;
+
+    --shadow-1: 0 1px 0 rgba(255, 255, 255, 0.02), 0 12px 30px rgba(0, 0, 0, 0.6);
+    --shadow-2: 0 1px 0 rgba(255, 255, 255, 0.03), 0 24px 56px rgba(0, 0, 0, 0.7);
+    --shadow-gold: 0 10px 32px rgba(246, 184, 79, 0.26);
+
+    --aurora-1: rgba(255, 255, 255, 0.018);
+    --aurora-2: rgba(255, 255, 255, 0.012);
+    --aurora-3: rgba(255, 255, 255, 0.008);
+    --grain-opacity: 0.12;
+    --selection-bg: rgba(61, 174, 151, 0.3);
+    --selection-fg: #0f231e;
+    --scrollbar: rgba(255, 255, 255, 0.13);
+    --scrollbar-hover: rgba(255, 255, 255, 0.24);
+  }
+}
+
+/* ===== Override explícito pelo toggle (vence o SO nos dois sentidos) ===== */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg-0: #050505;
+  --bg-1: #0e0e0e;
+  --panel: #161616;
+  --panel-2: #1e1e1e;
+  --elev: #242424;
+  --hairline: rgba(255, 255, 255, 0.08);
+  --hairline-strong: rgba(255, 255, 255, 0.14);
+  --overlay: rgba(0, 0, 0, 0.6);
+  --fill-subtle: rgba(255, 255, 255, 0.04);
+
+  --text: #f5f2ee;
+  --muted: #b5ac9f;
+  --faint: #7c7367;
+
+  --gold: #f6b84f;
+  --gold-2: #f8c766;
+  --gold-deep: #f6b84f;
+  --amber-edge: #c98a2a;
+  --ember: #f26a44;
+  --ember-edge: #c0492e;
+  --plum: #b77bc9;
+
+  --good: #3dae97;
+  --teal-edge: #227a67;
+  --close: #f0b94a;
+  --off: #e06a50;
+  --info: #7fb2ff;
+
+  --shadow-1: 0 1px 0 rgba(255, 255, 255, 0.02), 0 12px 30px rgba(0, 0, 0, 0.6);
+  --shadow-2: 0 1px 0 rgba(255, 255, 255, 0.03), 0 24px 56px rgba(0, 0, 0, 0.7);
+  --shadow-gold: 0 10px 32px rgba(246, 184, 79, 0.26);
+
+  --aurora-1: rgba(255, 255, 255, 0.018);
+  --aurora-2: rgba(255, 255, 255, 0.012);
+  --aurora-3: rgba(255, 255, 255, 0.008);
+  --grain-opacity: 0.12;
+  --selection-bg: rgba(61, 174, 151, 0.3);
+  --selection-fg: #0f231e;
+  --scrollbar: rgba(255, 255, 255, 0.13);
+  --scrollbar-hover: rgba(255, 255, 255, 0.24);
 }

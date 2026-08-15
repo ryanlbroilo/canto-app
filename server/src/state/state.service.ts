@@ -26,6 +26,9 @@ export class StateService {
       baseline: s.baseline,
       rangeHistory: s.rangeHistory,
       achievements: s.achievements,
+      freeze: s.freeze,
+      weeklyGoal: s.weeklyGoal,
+      reminder: s.reminder,
       seenOnboarding: s.seenOnboarding,
       updatedAt: s.updatedAt,
     }
@@ -40,6 +43,9 @@ export class StateService {
       baseline: jsonField(dto.baseline),
       rangeHistory: jsonField(dto.rangeHistory),
       achievements: jsonField(dto.achievements),
+      freeze: jsonField(dto.freeze),
+      weeklyGoal: jsonField(dto.weeklyGoal),
+      reminder: jsonField(dto.reminder),
       seenOnboarding: dto.seenOnboarding,
     }
     await this.prisma.userState.upsert({

@@ -1,6 +1,7 @@
 import { useLocation } from 'react-router-dom'
 import { Icon } from '../components/ui/Icon'
 import { useApp } from './AppContext'
+import { ThemeToggle } from './ThemeToggle'
 
 const TITLES: Record<string, string> = {
   '/': 'Início',
@@ -32,6 +33,7 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
         <span className="topbar-title">{titleFor(pathname)}</span>
       </div>
       <div className="topbar-actions">
+        <ThemeToggle />
         <div className="mic-pill" data-live={live}>
           <span className="mic-dot" />
           {live ? 'microfone ao vivo' : 'microfone desligado'}

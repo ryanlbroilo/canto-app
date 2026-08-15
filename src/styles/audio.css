@@ -232,7 +232,7 @@
     box-shadow 140ms var(--ease);
 }
 .reg-zone[data-active='1'] {
-  color: #fff;
+  color: var(--text);
   border-color: var(--zc);
   background: color-mix(in srgb, var(--zc) 20%, transparent);
   box-shadow: 0 0 20px color-mix(in srgb, var(--zc) 34%, transparent);

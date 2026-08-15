@@ -4,13 +4,15 @@ import { Link } from 'react-router-dom'
 import { useApp } from '../app/AppContext'
 import { AudioBlob } from '../components/audio/AudioBlob'
 import { Icon } from '../components/ui/Icon'
+import { Eva } from '../components/ui/Eva'
+import { EvaMoments } from '../components/EvaMoments'
 import type { IconName } from '../components/ui/Icon'
 import { midiLabel } from '../audio/notes'
 import { SKILL_BY_ID } from '../data/skills'
 import { TRACKS, trackForLevel } from '../data/tracks'
 import { ACHIEVEMENTS } from '../data/achievements'
 import { getExercise } from '../data/exercises'
-import { getFreezeState, getWeeklyGoal, setWeeklyGoal, weekPracticeDays } from '../data/store'
+import { getWeeklyGoal, setWeeklyGoal, weekPracticeDays } from '../data/store'
 import { useEntitlement } from '../hooks/useEntitlement'
 import type { ExerciseKind, TrackLevel } from '../data/types'
 
@@ -57,11 +59,11 @@ function last7(days: string[]) {
 const todayKey = () => new Date().toISOString().slice(0, 10)
 
 export default function Dashboard() {
-  const { engine, baseline, profile, streak, sessions, gamification } = useApp()
+  // freeze (protetor de ofensiva) vem do contexto — fonte única, ver AppContext.loadAll
+  const { engine, baseline, profile, streak, freeze, sessions, gamification } = useApp()
   const { totalXp, level, xpIntoLevel, xpForNext, skills, achievements, recommendation, exercisesDone } =
     gamification
   const { allowed: canMinistry } = useEntitlement('team_admin')
-  const freeze = getFreezeState()
   const [goalTarget, setGoalTarget] = useState(getWeeklyGoal().target)
   const weekDays = weekPracticeDays(sessions)
   const goalPct = Math.min(100, Math.round((weekDays / goalTarget) * 100))
@@ -128,6 +130,7 @@ export default function Dashboard() {
   return (
     <div className="page">
       <div className="dsh">
+        <EvaMoments />
         {/* ============ HERO com XP / nível ============ */}
         <div className="card card--glow dsh-hero reveal r0">
           <div className="dsh-hero-body">
@@ -355,7 +358,9 @@ export default function Dashboard() {
           {/* Streak + números */}
           <div className="card reveal r2">
             <div className="dsh-sec-head">
-              <span className="card-title">Sua semana</span>
+              <span className="card-title" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                {streak.current > 0 && <Eva mood="streak" size={30} />}Sua semana
+              </span>
               <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
                 {freeze.available > 0 && (
                   <span className="badge" title="Protetor de ofensiva — cobre 1 dia perdido automaticamente" style={{ color: 'var(--info)' }}>
@@ -439,7 +444,7 @@ export default function Dashboard() {
           <div className="card reveal r4">
             <div className="dsh-eva">
               <span className="dsh-eva-avatar">
-                <Icon name="spark" size={20} />
+                <Eva mood="happy" size={30} />
               </span>
               <div className="dsh-eva-body">
                 <div className="row spread">

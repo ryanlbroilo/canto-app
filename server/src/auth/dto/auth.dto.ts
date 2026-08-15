@@ -1,11 +1,14 @@
 import { IsBoolean, IsEmail, IsOptional, IsString, MaxLength, MinLength } from 'class-validator'
 
 export class RegisterDto {
-  // Cria um novo tenant (organização) e o usuário OWNER dele.
+  // Cria um novo tenant (a "conta") e o usuário OWNER dele. OPCIONAL: sem ele, o
+  // servidor provisiona um tenant pessoal a partir do nome/e-mail (cadastro de
+  // consumidor sem fricção — não precisa nomear "organização").
+  @IsOptional()
   @IsString()
   @MinLength(2)
   @MaxLength(80)
-  tenantName!: string
+  tenantName?: string
 
   @IsEmail()
   email!: string
@@ -53,9 +56,11 @@ export class ResetPasswordDto {
 }
 
 export class LoginDto {
-  // Login é escopado por tenant (o mesmo e-mail pode existir em tenants diferentes).
+  // OPCIONAL: sem slug, o login resolve pelo e-mail (consumidor com 1 conta). Com
+  // slug, escopa ao tenant — desambigua quando o mesmo e-mail existe em vários.
+  @IsOptional()
   @IsString()
-  tenantSlug!: string
+  tenantSlug?: string
 
   @IsEmail()
   email!: string

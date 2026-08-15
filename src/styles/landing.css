@@ -140,7 +140,7 @@
   width: 15%;
   height: 15%;
   border-radius: 50%;
-  background: radial-gradient(circle at 40% 35%, #f3cd7e, var(--gold));
+  background: radial-gradient(circle at 40% 35%, var(--gold-2), var(--gold));
   box-shadow: 0 0 28px rgba(233, 180, 76, 0.6);
 }
 @keyframes lpBreathe {

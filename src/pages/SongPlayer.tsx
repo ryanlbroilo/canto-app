@@ -9,6 +9,7 @@ import { addSession, newId } from '../data/store'
 import { SessionAggregator } from '../audio/session'
 import { freqToMidiFloat, midiLabel } from '../audio/notes'
 import { Icon } from '../components/ui/Icon'
+import { Eva } from '../components/ui/Eva'
 import { ShareButton } from '../components/ShareButton'
 import { FeatureReport } from '../data/types'
 import '../styles/musicas.css'
@@ -296,7 +297,7 @@ export default function SongPlayer() {
           <div className="page-head"><div><h1 className="page-title">Melodia aprendida</h1><p className="page-sub">{song.title}</p></div></div>
           <div className="card card--glow">
             <div className="player">
-              <div className="eva-avatar" style={{ width: 64, height: 64 }}><Icon name="check" size={30} /></div>
+              <Eva mood="celebrate" size={72} />
               <p className="hint center" style={{ maxWidth: '42ch' }}>Você ouviu a melodia inteira. Agora experimente cantar — a partitura rola e eu comparo sua voz nota a nota.</p>
               <div className="controls" style={{ justifyContent: 'center' }}>
                 <button className="btn btn--primary" onClick={() => start('sing')}><Icon name="mic" /> Cantar agora</button>

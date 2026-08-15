@@ -17,6 +17,14 @@ public/ort/
 /android
 /ios
 
+# karaokê: separação de voz (regenerável) e faixas importadas.
+# As faixas ficam de fora de propósito — um .canto.json é a transcrição da melodia de
+# uma gravação comercial. Importar para uso próprio é uma coisa; publicar num repo
+# no GitHub é outra. O áudio também nunca entra aqui.
+.cache/
+public/karaoke/
+*.canto.json
+
 # segredos locais (EVA Hub) — NUNCA commitar chaves vivas
 .env
 .env.local

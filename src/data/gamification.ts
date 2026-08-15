@@ -145,7 +145,7 @@ function computeTrend(hits: number[]): number {
 }
 
 /** Um exercício é "dominado" quando a melhor pontuação chega a 90. */
-function dominatedExerciseIds(
+export function dominatedExerciseIds(
   done: Record<string, { count: number; bestScore: number }>,
 ): Set<string> {
   const set = new Set<string>()

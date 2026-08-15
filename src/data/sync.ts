@@ -1,5 +1,6 @@
 // Sincronização das sessões com o backend (offline-first: falha não quebra o app).
 import { api, isAuthed } from './api'
+import { xpForSession } from './xp'
 import { SessionRecord } from './types'
 
 interface ServerSession {
@@ -31,6 +32,10 @@ export function pushSessionToBackend(rec: SessionRecord): void {
       avgCentsDev: rec.avgCentsDev,
       featureReport: rec.featureReport,
       dateISO: rec.dateISO,
+      // Fonte única de XP: o cliente calcula o XP determinístico (com o XP-base real
+      // do exercício + bônus de registro limpo) e envia. O servidor preserva esse
+      // valor, então o leaderboard mostra exatamente o mesmo XP que o dashboard.
+      xpEarned: xpForSession(rec),
     },
   }).catch(() => {
     /* offline/erro — mantém local; um retry-queue pode ser adicionado depois */
@@ -45,6 +50,9 @@ export interface UserStatePayload {
   baseline?: Record<string, unknown> | null
   rangeHistory?: unknown[]
   achievements?: unknown[]
+  freeze?: Record<string, unknown>
+  weeklyGoal?: Record<string, unknown>
+  reminder?: Record<string, unknown>
   seenOnboarding?: boolean
 }
 

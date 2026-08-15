@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // DOM entra porque scripts como test-session.ts exercitam módulos do browser
+    // (PitchEngine e companhia) rodando no Node. Os tipos do DOM aqui são para o
+    // grafo de imports fechar — nenhum script de fato toca em window/document.
+    "lib": ["ES2021", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "noEmit": true
+  },
+  "include": ["scripts/**/*.ts", "src/domain/karaoke", "src/audio/swiftf0-core.ts"]
+}

@@ -241,7 +241,7 @@
   background: linear-gradient(135deg, rgba(233, 180, 76, 0.24), rgba(233, 180, 76, 0.12));
   border: 1px solid rgba(233, 180, 76, 0.26);
   border-top-right-radius: 6px;
-  color: #fbeccb;
+  color: var(--text);
 }
 
 /* markdown dentro das bolhas da EVA */
@@ -256,7 +256,7 @@
 }
 .md-strong {
   font-weight: 700;
-  color: #fff;
+  color: var(--text);
 }
 .md-em {
   font-style: italic;

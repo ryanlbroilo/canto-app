@@ -47,7 +47,7 @@
   margin: 6px 0;
 }
 .legal-callout strong {
-  color: #eafff6;
+  color: var(--good);
 }
 .legal-callout svg {
   flex: none;

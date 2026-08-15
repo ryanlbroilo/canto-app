@@ -43,6 +43,14 @@ export class CreateSessionDto {
   @Min(0)
   avgCentsDev!: number
 
+  // XP determinístico calculado no cliente (fonte única; ver src/data/xp.ts).
+  // O servidor preserva este valor para que o leaderboard case com o dashboard.
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(1000)
+  xpEarned?: number
+
   @IsOptional()
   @IsObject()
   featureReport?: Record<string, unknown>

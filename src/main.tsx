@@ -23,6 +23,8 @@ import Ministerio from './pages/Ministerio'
 import Comunidade from './pages/Comunidade'
 import Musicas from './pages/Musicas'
 import SongPlayer from './pages/SongPlayer'
+import Karaoke from './pages/Karaoke'
+import KaraokePlayer from './pages/KaraokePlayer'
 import Planos from './pages/Planos'
 import Progress from './pages/Progress'
 import Team from './pages/Team'
@@ -30,6 +32,10 @@ import Coach from './pages/Coach'
 import Settings from './pages/Settings'
 import Onboarding from './pages/Onboarding'
 import './styles/index.css'
+import { initTheme } from './app/theme-mode'
+
+// Sincroniza cores de canvas + meta com o tema aplicado pelo script inline (index.html).
+initTheme()
 
 // Portão de autenticação: exige login para as rotas do app.
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -80,6 +86,8 @@ root.render(
             <Route path="/harmonia" element={<HarmonyTrainer />} />
             <Route path="/musicas" element={<Musicas />} />
             <Route path="/musicas/:id" element={<SongPlayer />} />
+            <Route path="/karaoke" element={<Karaoke />} />
+            <Route path="/karaoke/:id" element={<KaraokePlayer />} />
             <Route path="/ministerio" element={<Ministerio />} />
             <Route path="/comunidade" element={<Comunidade />} />
             <Route path="/progresso" element={<Progress />} />

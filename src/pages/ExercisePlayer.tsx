@@ -11,6 +11,7 @@ import { Exercise, ExerciseKind, FeatureReport, VocalBaseline } from '../data/ty
 import { freqToMidiFloat, midiLabel } from '../audio/notes'
 import { centsZone } from '../theme'
 import { Icon, IconName } from '../components/ui/Icon'
+import { Eva } from '../components/ui/Eva'
 import { SessionAggregator } from '../audio/session'
 import { VoiceInsights } from '../components/audio/VoiceInsights'
 import { SessionSummary } from '../components/audio/SessionSummary'
@@ -482,12 +483,8 @@ function Result({
   return (
     <div className="player">
       <div className="player-step">{title}</div>
+      <Eva mood={diag ? (diag.tone === 'great' ? 'celebrate' : diag.tone === 'work' ? 'encourage' : 'happy') : 'celebrate'} size={76} />
       {score != null && <div className="score-big">{score}%</div>}
-      {score == null && (
-        <div className="eva-avatar" style={{ width: 64, height: 64 }}>
-          <Icon name="check" size={30} />
-        </div>
-      )}
 
       {diag ? (
         <div className="coach" data-tone={diag.tone} style={{ width: '100%', maxWidth: 520 }}>

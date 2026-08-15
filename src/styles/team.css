@@ -77,8 +77,8 @@
   display: grid;
   place-items: center;
   font-weight: 600;
-  color: #1a140a;
-  background: linear-gradient(135deg, var(--gold), #f3cd7e);
+  color: var(--ink-on-accent);
+  background: linear-gradient(135deg, var(--gold), var(--gold-2));
 }
 .member-name {
   font-weight: 600;

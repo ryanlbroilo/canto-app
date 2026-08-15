@@ -15,8 +15,7 @@
   gap: 6px;
   padding: 22px 16px;
   border-right: 1px solid var(--hairline);
-  background: linear-gradient(180deg, rgba(27, 23, 16, 0.6), rgba(19, 16, 9, 0.35));
-  backdrop-filter: blur(8px);
+  background: var(--bg-1);
   overflow-y: auto;
 }
 .brand {
@@ -74,7 +73,7 @@
 }
 .nav-link:hover {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--panel-2);
 }
 .nav-link.active {
   color: var(--gold-2);
@@ -126,8 +125,7 @@
   padding-left: max(28px, env(safe-area-inset-left, 0px));
   padding-right: max(28px, env(safe-area-inset-right, 0px));
   border-bottom: 1px solid var(--hairline);
-  background: rgba(13, 12, 10, 0.55);
-  backdrop-filter: blur(10px);
+  background: var(--bg-1);
 }
 .topbar-title {
   font-family: var(--font-display);
@@ -147,7 +145,7 @@
   place-items: center;
   font-size: 13px;
   font-weight: 700;
-  color: #241a08;
+  color: var(--ink-on-accent);
   background: linear-gradient(135deg, var(--gold-2), var(--ember));
   flex: none;
 }

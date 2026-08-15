@@ -122,14 +122,14 @@ export async function api<T>(path: string, opts: ApiOpts = {}): Promise<T> {
 
 // ---------- Auth ----------
 export interface RegisterInput {
-  tenantName: string
+  tenantName?: string
   email: string
   password: string
   name?: string
   consent?: boolean
 }
 export interface LoginInput {
-  tenantSlug: string
+  tenantSlug?: string
   email: string
   password: string
 }

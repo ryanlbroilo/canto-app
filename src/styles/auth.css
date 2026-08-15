@@ -50,20 +50,23 @@
   margin-bottom: 4px;
 }
 .auth-logo {
-  width: 34px;
-  height: 34px;
-  border-radius: 11px;
+  width: 40px;
+  height: 40px;
   display: grid;
   place-items: center;
-  color: #1a140a;
-  background: linear-gradient(135deg, var(--gold), #f3cd7e);
-  box-shadow: 0 8px 20px rgba(233, 180, 76, 0.28);
+}
+.auth-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 .auth-word {
   font-family: var(--font-display);
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 800;
   letter-spacing: -0.01em;
+  display: inline-flex;
+  align-items: baseline;
 }
 .auth-word em {
   color: var(--gold-2);
@@ -127,7 +130,7 @@
   margin-bottom: 2px;
 }
 .auth-invite strong {
-  color: #eafff6;
+  color: var(--good);
 }
 
 .auth-error {

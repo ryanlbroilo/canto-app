@@ -4,78 +4,118 @@
    ============================================================ */
 
 /* ---------- Botões ---------- */
+/* Botão 3D chunky (v2): lábio sólido `0 4px 0` + press-down, sem layout shift.
+   Base = secundário (branco + borda). Ver .btn--primary/--amber pra as ações. */
 .btn {
-  --bg: rgba(255, 255, 255, 0.05);
   appearance: none;
-  border: 1px solid var(--hairline);
-  background: var(--bg);
-  color: var(--text);
+  border: 2px solid var(--hairline-strong);
+  background: var(--bg-0);
+  color: var(--good);
   font-family: var(--font-ui);
-  font-size: 14.5px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  padding: 11px 20px;
-  border-radius: var(--r-sm);
+  font-size: 15px;
+  font-weight: 800;
+  padding: 12px 20px;
+  min-height: 48px;
+  border-radius: var(--r-md);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 9px;
   white-space: nowrap;
+  box-shadow: 0 4px 0 0 var(--hairline-strong);
   transition:
-    transform 90ms var(--ease),
-    background 140ms var(--ease),
-    border-color 140ms var(--ease),
-    filter 140ms var(--ease);
+    transform 80ms var(--ease),
+    box-shadow 80ms var(--ease),
+    filter 120ms var(--ease);
 }
 .btn:hover {
-  background: rgba(255, 255, 255, 0.09);
-  border-color: var(--hairline-strong);
+  filter: brightness(1.03);
 }
 .btn:active {
-  transform: translateY(1px);
+  transform: translateY(4px);
+  box-shadow: 0 0 0 0 transparent;
+}
+.btn:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 3px;
 }
 .btn:disabled {
-  opacity: 0.5;
+  color: var(--faint);
+  background: var(--panel);
+  border-color: var(--hairline);
+  box-shadow: 0 4px 0 0 var(--hairline);
   cursor: default;
+  filter: none;
   transform: none;
 }
 .btn svg {
-  width: 17px;
-  height: 17px;
+  width: 19px;
+  height: 19px;
 }
+
+/* Primária = TEAL-afinado ("em tom = pode seguir") — o "slot do verde" da Duo. */
 .btn--primary {
   border: none;
-  color: #241a08;
-  background: linear-gradient(135deg, var(--gold-2), var(--gold) 55%, var(--gold-deep));
-  box-shadow: var(--shadow-gold);
+  color: #fff;
+  background: var(--good);
+  box-shadow: 0 4px 0 0 var(--teal-edge);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
-.btn--primary:hover {
-  filter: brightness(1.05);
-  background: linear-gradient(135deg, var(--gold-2), var(--gold) 55%, var(--gold-deep));
+.btn--primary:disabled {
+  color: var(--faint);
+  background: var(--panel-2);
+  box-shadow: 0 4px 0 0 var(--hairline);
 }
+
+/* Acento âmbar (XP / Super / premium) — texto ESCURO, nunca branco (contraste). */
+.btn--amber {
+  border: none;
+  color: var(--ink-on-accent);
+  background: var(--gold);
+  box-shadow: 0 4px 0 0 var(--amber-edge);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .btn--ghost {
+  border: none;
   background: transparent;
-  border-color: transparent;
+  box-shadow: none;
+  color: var(--good);
 }
-.btn--ghost:hover {
-  background: rgba(255, 255, 255, 0.06);
+.btn--ghost:active {
+  transform: none;
 }
+
 .btn--danger {
-  color: #ffd7d0;
-  border-color: rgba(242, 109, 91, 0.3);
-  background: rgba(242, 109, 91, 0.08);
+  border: none;
+  color: #fff;
+  background: var(--off);
+  box-shadow: 0 4px 0 0 var(--ember-edge);
 }
+
 .btn--sm {
-  padding: 7px 14px;
+  padding: 8px 14px;
+  min-height: 38px;
   font-size: 13px;
+  box-shadow: 0 3px 0 0 var(--hairline-strong);
+}
+.btn--sm:active {
+  transform: translateY(3px);
 }
 .btn--block {
   width: 100%;
 }
 .btn--icon {
-  padding: 9px;
+  padding: 0;
+  width: 44px;
+  height: 44px;
+  min-height: 0;
   border-radius: var(--r-sm);
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 /* ---------- Card ---------- */
@@ -92,7 +132,7 @@
 }
 .card--glow {
   border-color: var(--hairline-strong);
-  box-shadow: var(--shadow-2), 0 0 0 1px rgba(233, 180, 76, 0.04);
+  box-shadow: var(--shadow-2);
 }
 .card-title {
   font-family: var(--font-ui);

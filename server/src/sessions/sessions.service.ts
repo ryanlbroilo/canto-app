@@ -28,6 +28,9 @@ export class SessionsService {
       notesHitPct: dto.notesHitPct,
       avgCentsDev: dto.avgCentsDev,
       featureReport: (dto.featureReport ?? null) as Prisma.InputJsonValue,
+      // Fonte única de XP: valor determinístico calculado no cliente (data/xp.ts).
+      // Persistido aqui para que o leaderboard não divirja do dashboard do usuário.
+      xpEarned: dto.xpEarned ?? null,
       dateISO: new Date(dto.dateISO),
     }
 
@@ -47,6 +50,7 @@ export class SessionsService {
             notesHitPct: data.notesHitPct,
             avgCentsDev: data.avgCentsDev,
             featureReport: data.featureReport,
+            xpEarned: data.xpEarned,
             processedAt: null,
           },
         })

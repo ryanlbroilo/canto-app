@@ -1,6 +1,6 @@
 /* ============================================================
-   Base — reset, atmosfera (auroras quentes + grão), tipografia,
-   utilidades de layout e animações de revelação.
+   Base — reset, atmosfera (auroras + grão, via tokens por tema),
+   tipografia, utilidades de layout e animações de revelação.
    ============================================================ */
 *,
 *::before,
@@ -27,26 +27,26 @@ body {
   overflow: hidden; /* o scroll vive no <main> */
 }
 
-/* auroras quentes de fundo (fixas) */
+/* auroras de fundo (fixas) — cor por tema via tokens */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   z-index: -2;
   background:
-    radial-gradient(820px 460px at 8% -6%, rgba(233, 180, 76, 0.12), transparent 60%),
-    radial-gradient(760px 620px at 104% 4%, rgba(198, 93, 59, 0.13), transparent 58%),
-    radial-gradient(700px 520px at 60% 116%, rgba(87, 214, 166, 0.06), transparent 60%),
+    radial-gradient(820px 460px at 8% -6%, var(--aurora-1), transparent 60%),
+    radial-gradient(760px 620px at 104% 4%, var(--aurora-2), transparent 58%),
+    radial-gradient(700px 520px at 60% 116%, var(--aurora-3), transparent 60%),
     var(--bg-0);
 }
-/* grão sutil por cima */
+/* grão sutil por cima — só no escuro (opacity via token) */
 body::after {
   content: '';
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  opacity: 0.4;
+  opacity: var(--grain-opacity);
   mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
 }
@@ -66,8 +66,8 @@ h4 {
   font-variant-numeric: tabular-nums;
 }
 ::selection {
-  background: rgba(233, 180, 76, 0.28);
-  color: #fff;
+  background: var(--selection-bg);
+  color: var(--selection-fg);
 }
 a {
   color: inherit;
@@ -80,13 +80,13 @@ a {
   height: 11px;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(233, 180, 76, 0.14);
+  background: var(--scrollbar);
   border-radius: 999px;
   border: 3px solid transparent;
   background-clip: content-box;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(233, 180, 76, 0.26);
+  background: var(--scrollbar-hover);
   background-clip: content-box;
 }
 

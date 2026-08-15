@@ -9,6 +9,7 @@ import { addSession, markReviewDone, newId } from '../data/store'
 import { FeatureReport } from '../data/types'
 import { ExerciseRunner } from './ExercisePlayer'
 import { Icon, IconName } from '../components/ui/Icon'
+import { Eva } from '../components/ui/Eva'
 
 export type RunnerMode = 'unit' | 'spaced' | 'warmup' | 'cooldown'
 
@@ -113,9 +114,7 @@ export default function ReviewRunner({ mode }: { mode: RunnerMode }) {
         </div>
         <div className="card card--glow">
           <div className="player">
-            <div className="eva-avatar" style={{ width: 64, height: 64 }}>
-              <Icon name={cfg.doneIcon} size={30} />
-            </div>
+            <Eva mood="celebrate" size={72} />
             {!isRoutine && <div className="score-big">{avg}%</div>}
             <p className="hint center" style={{ maxWidth: '42ch' }}>{cfg.doneMsg}</p>
             <div className="controls" style={{ justifyContent: 'center' }}>
